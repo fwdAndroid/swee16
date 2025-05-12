@@ -31,11 +31,11 @@ class _MainDashboardState extends State<MainDashboard> {
       child: Scaffold(
         body: _screens[_currentIndex],
         bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: unselectedIconColor,
+          backgroundColor: textFieldColor,
           selectedLabelStyle: TextStyle(color: mainColor),
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          unselectedLabelStyle: TextStyle(color: whiteColor),
+          unselectedLabelStyle: TextStyle(color: Colors.white70),
           type: BottomNavigationBarType.fixed,
           currentIndex: _currentIndex,
           onTap: (index) {
