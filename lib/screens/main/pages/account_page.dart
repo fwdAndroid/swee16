@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:swee16/screens/subscription/subscription.dart';
+import 'package:swee16/screens/settings/add_account_page.dart';
+import 'package:swee16/screens/settings/subscription.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:swee16/widget/save_button.dart';
 
@@ -36,7 +37,15 @@ class _AccountPageState extends State<AccountPage> {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: SaveButton(title: "Add Account", onTap: () {}),
+              child: SaveButton(
+                title: "Add Account",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (builder) => AddAccountPage()),
+                  );
+                },
+              ),
             ),
           ),
           Center(
