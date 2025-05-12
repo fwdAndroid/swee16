@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:swee16/screens/auth/login_screen.dart';
 import 'package:swee16/screens/main/main_dashboard.dart';
 import 'package:swee16/utils/color_platter.dart';
 
@@ -24,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
     //   User? user = FirebaseAuth.instance.currentUser;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => MainDashboard()),
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
 
     // if (user != null) {
