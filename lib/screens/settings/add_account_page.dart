@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social_login_buttons/social_login_buttons.dart';
 import 'package:swee16/screens/main/main_dashboard.dart';
+import 'package:swee16/services/auth.dart';
 import 'package:swee16/utils/color_platter.dart';
 
 class AddAccountPage extends StatefulWidget {
@@ -13,6 +17,7 @@ class AddAccountPage extends StatefulWidget {
 
 class _AddAccountPageState extends State<AddAccountPage> {
   TextEditingController emailController = TextEditingController();
+  GoogleSignIn _googleSignIn = GoogleSignIn();
   bool isGoogle = false;
 
   @override
@@ -99,41 +104,41 @@ class _AddAccountPageState extends State<AddAccountPage> {
         buttonType: SocialLoginButtonType.google,
         borderRadius: 15,
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (builder) => MainDashboard()),
-          );
+          if (emailController.text.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Please enter your full name')),
+            );
+            return;
+          } else {
+            _googleSignIn.signOut();
+            _loginWithGoogle();
+          }
         },
       ),
     );
   }
 
-  // Future<void> _loginWithGoogle() async {
-  //   AuthMethods().signInWithGoogle().then((value) async {
-  //     setState(() {
-  //       isGoogle = true;
-  //     });
+  Future<void> _loginWithGoogle() async {
+    AuthService().signInWithGoogle().then((value) async {
+      setState(() {
+        isGoogle = true;
+      });
 
-  //     User? user = FirebaseAuth.instance.currentUser;
+      User? user = FirebaseAuth.instance.currentUser;
 
-  //     await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({
-  //       "email": user?.email,
-  //       "fullName": user?.displayName,
-  //       "phoneNumber": user?.phoneNumber ?? "Not Available",
-  //       "password": "No Password Available",
-  //       "image": FirebaseAuth.instance.currentUser!.photoURL,
-  //       "confrimPassword": "No Password Available",
+      await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({
+        "email": user?.email,
+        "fullName": emailController.text,
+        "uid": user!.uid,
+      });
 
-  //       "uid": user!.uid,
-  //     });
-
-  //     setState(() {
-  //       isGoogle = false;
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (builder) => MainDashboard()),
-  //       );
-  //     });
-  //   });
-  // }
+      setState(() {
+        isGoogle = false;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (builder) => MainDashboard()),
+        );
+      });
+    });
+  }
 }
