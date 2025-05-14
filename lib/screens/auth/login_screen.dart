@@ -1,10 +1,13 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:social_login_buttons/social_login_buttons.dart';
 import 'package:swee16/screens/main/main_dashboard.dart';
+import 'package:swee16/services/auth.dart';
 import 'package:swee16/utils/color_platter.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -114,47 +117,48 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildGoogleSignInButton() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: SocialLoginButton(
-        height: 55,
-        width: 327,
-        buttonType: SocialLoginButtonType.google,
-        borderRadius: 15,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (builder) => MainDashboard()),
-          );
-        },
-      ),
+      child:
+          isGoogle
+              ? CircularProgressIndicator()
+              : SocialLoginButton(
+                height: 55,
+                width: 327,
+                buttonType: SocialLoginButtonType.google,
+                borderRadius: 15,
+                onPressed: () {
+                  if (emailController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter your full name')),
+                    );
+                  } else {
+                    _loginWithGoogle();
+                  }
+                },
+              ),
     );
   }
 
-  // Future<void> _loginWithGoogle() async {
-  //   AuthMethods().signInWithGoogle().then((value) async {
-  //     setState(() {
-  //       isGoogle = true;
-  //     });
+  Future<void> _loginWithGoogle() async {
+    AuthService().signInWithGoogle().then((value) async {
+      setState(() {
+        isGoogle = true;
+      });
 
-  //     User? user = FirebaseAuth.instance.currentUser;
+      User? user = FirebaseAuth.instance.currentUser;
 
-  //     await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({
-  //       "email": user?.email,
-  //       "fullName": user?.displayName,
-  //       "phoneNumber": user?.phoneNumber ?? "Not Available",
-  //       "password": "No Password Available",
-  //       "image": FirebaseAuth.instance.currentUser!.photoURL,
-  //       "confrimPassword": "No Password Available",
+      await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({
+        "email": user?.email,
+        "fullName": emailController.text,
+        "uid": user!.uid,
+      });
 
-  //       "uid": user!.uid,
-  //     });
-
-  //     setState(() {
-  //       isGoogle = false;
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (builder) => MainDashboard()),
-  //       );
-  //     });
-  //   });
-  // }
+      setState(() {
+        isGoogle = false;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (builder) => MainDashboard()),
+        );
+      });
+    });
+  }
 }
