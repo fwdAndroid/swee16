@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "857332039763",
+    "project_id": "connectingfamilies-13936",
+    "storage_bucket": "connectingfamilies-13936.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857332039763:android:7323bab548fc71e8a9c6a6",
+        "android_client_info": {
+          "package_name": "com.example.swee16"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857332039763-7lrmbk843i9ms3qqkle4pqqq8qs9eunu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbxvszFWhYZ2VdqKRaJpZ5ZRFU242eg4U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857332039763-7lrmbk843i9ms3qqkle4pqqq8qs9eunu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "857332039763-rkuqcqgv3av950jcgg53rgdvg1v6p5lk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.connectingfamilies"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
