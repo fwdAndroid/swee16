@@ -306,25 +306,22 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Visibility(
-                    visible: _showUndo,
-                    child: GestureDetector(
-                      onTap: _undoLastAction,
-                      child: Container(
-                        width: 142,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Undo Last Action',
-                            style: TextStyle(
-                              color: whiteColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  GestureDetector(
+                    onTap: _undoLastAction,
+                    child: Container(
+                      width: 142,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Undo Last Action',
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
