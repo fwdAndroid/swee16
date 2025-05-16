@@ -32,7 +32,7 @@ class _ScorePageState extends State<ScorePage> {
                     padding: const EdgeInsets.all(8.0),
                     child: SizedBox(
                       height: 160,
-                      width: 300,
+                      width: 280,
                       child: Card(
                         color: textFieldColor,
                         child: Column(

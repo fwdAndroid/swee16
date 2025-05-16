@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:swee16/utils/color_platter.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,12 +11,296 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  TextEditingController emailController = TextEditingController();
+  stt.SpeechToText speech = stt.SpeechToText();
+  bool isListening = false;
+  int goodCount = 0;
+  int missedCount = 0;
+  bool isVoiceMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    bool available = await speech.initialize(
+      onStatus: (status) {
+        setState(() {
+          isListening = status == 'listening';
+        });
+      },
+      onError: (error) {
+        print('Error: $error');
+      },
+    );
+    if (!available) {
+      print('Speech recognition not available');
+    }
+  }
+
+  void _startListening() async {
+    if (!isListening) {
+      bool available = await speech.initialize();
+      if (available) {
+        setState(() {
+          isListening = true;
+        });
+        speech.listen(
+          onResult: (result) {
+            if (result.finalResult) {
+              String recognizedText = result.recognizedWords.toLowerCase();
+              if (recognizedText.contains('good')) {
+                setState(() {
+                  goodCount++;
+                });
+              } else if (recognizedText.contains('missed')) {
+                setState(() {
+                  missedCount++;
+                });
+              }
+            }
+          },
+        );
+      }
+    }
+  }
+
+  void _stopListening() {
+    if (isListening) {
+      speech.stop();
+      setState(() {
+        isListening = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    speech.stop();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: blackColor,
       body: Column(
         children: [
+          const SizedBox(height: 50),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isVoiceMode = false;
+                      _stopListening();
+                    });
+                  },
+                  child: Container(
+                    child: Center(
+                      child: Text(
+                        'Manually',
+                        style: TextStyle(
+                          color: blackColor,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    width: 142,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: isVoiceMode ? labelColor : mainColor,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isVoiceMode = true;
+                      _startListening();
+                    });
+                  },
+                  child: Container(
+                    child: Center(
+                      child: Text(
+                        'Voice',
+                        style: TextStyle(
+                          color: blackColor,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    width: 142,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: isVoiceMode ? mainColor : labelColor,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isVoiceMode)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                isListening
+                    ? 'Listening... Say "Good" or "Missed"'
+                    : 'Tap Voice button to start',
+                style: TextStyle(color: whiteColor, fontSize: 16),
+              ),
+            ),
+          SizedBox(
+            height: 310,
+            child: Stack(
+              children: [
+                Image.asset("assets/basketball.png", width: 400),
+                _buildCircle(10, goldenYellow, 70, 10),
+                _buildCircle(11, lightGrey, 97, 40),
+                _buildCircle(9, red, 60, 100),
+                _buildCircle(12, purpleBlue, 100, 115),
+                _buildCircle(2, lightGreen, 40, 150),
+                _buildCircle(1, redOrange, 5, 10),
+                _buildCircle(16, margintaPink, 170, 20),
+                _buildCircle(13, warmOrange, 170, 90),
+                _buildCircle(8, goldenOrange, 172, 142),
+                _buildCircle(3, brightNeonGreen, 170, 205),
+                _buildCircle(14, royalPurple, 240, 115),
+                _buildCircle(7, oliveGreen, 270, 90),
+                _buildCircle(4, vivedYellow, 290, 150),
+                _buildCircle(6, hotPink, 280, 11),
+                _buildCircle(5, brownishOrange, 335, 10),
+                _buildCircle(15, greenishGrey, 240, 40),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Good',
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          goodCount.toString(),
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  width: 142,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: mainColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Missed',
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          missedCount.toString(),
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  width: 142,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Center(
+            child: SizedBox(
+              width: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    hintText: 'Full Name',
+                    hintStyle: GoogleFonts.poppins(
+                      color: labelColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    contentPadding: const EdgeInsets.only(left: 8, top: 15),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(
+                        color: Color(0xff200E32).withOpacity(.10),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(color: Color(0xff200E32)),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(color: Color(0xff200E32)),
+                    ),
+                    fillColor: Color(0xff200E32),
+                    filled: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -23,10 +309,10 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   child: Center(
                     child: Text(
-                      'Manually',
+                      'Save practice',
                       style: TextStyle(
-                        color: blackColor,
-                        fontSize: 24,
+                        color: whiteColor,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -36,17 +322,17 @@ class _HomePageState extends State<HomePage> {
                   height: 60,
                   decoration: BoxDecoration(
                     color: mainColor,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Container(
                   child: Center(
                     child: Text(
-                      'Voice',
+                      'Delete practice',
                       style: TextStyle(
-                        color: blackColor,
-                        fontSize: 24,
+                        color: whiteColor,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -55,34 +341,10 @@ class _HomePageState extends State<HomePage> {
                   width: 142,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: labelColor,
-                    borderRadius: BorderRadius.circular(5),
+                    color: red,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 310,
-            child: Stack(
-              children: [
-                Image.asset("assets/basketball.png"),
-                _buildCircle(10, Colors.orange, 125, 10),
-                _buildCircle(11, Colors.white, 125, 50),
-                _buildCircle(9, Colors.red, 80, 60),
-                _buildCircle(12, Colors.indigo, 95, 100),
-                _buildCircle(2, Colors.green.shade200, 40, 120),
-                _buildCircle(1, Colors.blue, 20, 10),
-                _buildCircle(16, Colors.pink, 160, 20),
-                _buildCircle(13, Colors.deepOrange, 150, 120),
-                _buildCircle(8, Colors.orange.shade300, 145, 180),
-                _buildCircle(3, Colors.green.shade700, 200, 200),
-                _buildCircle(14, Colors.purple.shade900, 200, 140),
-                _buildCircle(7, Colors.green.shade800, 230, 90),
-                _buildCircle(4, Colors.yellow, 260, 110),
-                _buildCircle(6, Colors.pinkAccent, 280, 20),
-                _buildCircle(5, Colors.deepOrange.shade700, 310, 10),
-                _buildCircle(15, Colors.green.shade100, 215, 50),
               ],
             ),
           ),
@@ -106,7 +368,11 @@ class _HomePageState extends State<HomePage> {
         alignment: Alignment.center,
         child: Text(
           number.toString(),
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: blackColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 10,
+          ),
         ),
       ),
     );
