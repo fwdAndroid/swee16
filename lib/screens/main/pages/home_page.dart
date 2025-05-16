@@ -191,74 +191,103 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Good',
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    if (!isVoiceMode) {
+                      // Only work in manual mode
+                      setState(() {
+                        goodCount++;
+                      });
+                    }
+                  },
+                  child: Container(
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Good',
+                            style: TextStyle(
+                              color: whiteColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          goodCount.toString(),
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            goodCount.toString(),
+                            style: TextStyle(
+                              color: whiteColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  width: 142,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: mainColor,
-                    borderRadius: BorderRadius.circular(10),
+                    width: 142,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: mainColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border:
+                          isVoiceMode
+                              ? null
+                              : Border.all(color: Colors.white, width: 2),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                Container(
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Missed',
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    if (!isVoiceMode) {
+                      // Only work in manual mode
+                      setState(() {
+                        missedCount++;
+                      });
+                    }
+                  },
+                  child: Container(
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Missed',
+                            style: TextStyle(
+                              color: whiteColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          missedCount.toString(),
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            missedCount.toString(),
+                            style: TextStyle(
+                              color: whiteColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  width: 142,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: red,
-                    borderRadius: BorderRadius.circular(10),
+                    width: 142,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: red,
+                      borderRadius: BorderRadius.circular(10),
+                      border:
+                          isVoiceMode
+                              ? null
+                              : Border.all(color: Colors.white, width: 2),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+
           Center(
             child: SizedBox(
               width: 300,
