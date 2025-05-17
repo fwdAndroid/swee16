@@ -42,7 +42,7 @@ class BuildCircleWidget extends StatelessWidget {
         _buildCircle(),
         const SizedBox(width: 4),
         Text(
-          percentage.toString(),
+          '${percentage.toStringAsFixed(0)}%', // Add % symbol
           style: TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.bold,
@@ -53,13 +53,12 @@ class BuildCircleWidget extends StatelessWidget {
     );
   }
 
-  // For other numbers (percentage on top)
   Widget _buildNumberWithTopPercentage() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          percentage.toString(),
+          '${percentage.toStringAsFixed(0)}%',
           style: TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.bold,

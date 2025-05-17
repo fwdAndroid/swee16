@@ -22,11 +22,16 @@ class _HomePageState extends State<HomePage> {
   bool _showUndo = false;
   int? _selectedNumber;
   Offset? _selectedPosition;
+  Map<int, int> _tapCounts = {for (var i = 1; i <= 16; i++) i: 0};
+  int get _totalTaps => _tapCounts.values.reduce((a, b) => a + b);
 
   @override
   void initState() {
     super.initState();
     _initSpeech();
+    // for (int i = 1; i <= 16; i++) {
+    //   _tapCounts[i] = 0;
+    // }
   }
 
   void _initSpeech() async {
@@ -201,31 +206,44 @@ class _HomePageState extends State<HomePage> {
                     color: blueLight,
                     left: 5,
                     top: 7,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[1]! / _totalTaps * 100),
+
                     onTap: () => _handleNumberTap(1, 5, 7),
                   ),
                   BuildCircleWidget(
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[2]! / _totalTaps * 100),
                     number: 2,
                     color: lightGreen,
-                    left: 50,
+                    left: 40,
                     top: 150,
-                    onTap: () => _handleNumberTap(2, 50, 150),
+                    onTap: () => _handleNumberTap(2, 40, 150),
                   ),
                   BuildCircleWidget(
                     number: 3,
                     color: brightNeonGreen,
                     left: 170,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[3]! / _totalTaps * 100),
                     top: 200,
-                    onTap: () => _handleNumberTap(3, 170, 205),
+                    onTap: () => _handleNumberTap(3, 170, 200),
                   ),
                   BuildCircleWidget(
                     number: 4,
                     color: vivedYellow,
                     left: 290,
                     top: 150,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[4]! / _totalTaps * 100),
 
                     onTap: () => _handleNumberTap(4, 290, 150),
                   ),
@@ -234,12 +252,18 @@ class _HomePageState extends State<HomePage> {
                     color: brownishOrange,
                     left: 335,
                     top: 7,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[5]! / _totalTaps * 100),
                     onTap: () => _handleNumberTap(5, 335, 7),
                   ),
                   BuildCircleWidget(
                     number: 6,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[6]! / _totalTaps * 100),
                     color: hotPink,
                     left: 280,
                     top: 7,
@@ -247,16 +271,23 @@ class _HomePageState extends State<HomePage> {
                   ),
                   BuildCircleWidget(
                     number: 7,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[7]! / _totalTaps * 100),
+
                     color: oliveGreen,
-                    left: 278,
-                    top: 80,
-                    onTap: () => _handleNumberTap(7, 278, 80),
+                    left: 270,
+                    top: 90,
+                    onTap: () => _handleNumberTap(7, 270, 90),
                   ),
                   BuildCircleWidget(
                     number: 8,
                     color: goldenOrange,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[8]! / _totalTaps * 100),
                     left: 172,
                     top: 132,
                     onTap: () => _handleNumberTap(8, 172, 132),
@@ -265,30 +296,42 @@ class _HomePageState extends State<HomePage> {
                     number: 9,
                     color: red,
                     left: 60,
-                    top: 80,
-                    percentage: 0,
+                    top: 100,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[9]! / _totalTaps * 100),
 
-                    onTap: () => _handleNumberTap(9, 60, 80),
+                    onTap: () => _handleNumberTap(9, 60, 100),
                   ),
                   BuildCircleWidget(
                     number: 10,
                     color: goldenYellow,
                     left: 60,
                     top: 7,
-                    percentage: 0,
-                    onTap: () => _handleNumberTap(10, 60, 7),
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[10]! / _totalTaps * 100),
+                    onTap: () => _handleNumberTap(10, 70, 20),
                   ),
                   BuildCircleWidget(
                     number: 11,
                     color: lightGrey,
                     left: 97,
                     top: 27,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[11]! / _totalTaps * 100),
                     onTap: () => _handleNumberTap(11, 97, 27),
                   ),
                   BuildCircleWidget(
                     number: 12,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[12]! / _totalTaps * 100),
                     color: purpleBlue,
                     left: 100,
                     top: 104,
@@ -298,7 +341,10 @@ class _HomePageState extends State<HomePage> {
                     number: 13,
                     color: warmOrange,
                     left: 170,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[13]! / _totalTaps * 100),
                     top: 77,
                     onTap: () => _handleNumberTap(13, 170, 77),
                   ),
@@ -307,20 +353,29 @@ class _HomePageState extends State<HomePage> {
                     color: royalPurple,
                     left: 240,
                     top: 100,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[14]! / _totalTaps * 100),
                     onTap: () => _handleNumberTap(14, 240, 100),
                   ),
                   BuildCircleWidget(
                     number: 15,
                     color: greenishGrey,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[15]! / _totalTaps * 100),
                     left: 240,
                     top: 27,
                     onTap: () => _handleNumberTap(15, 240, 27),
                   ),
                   BuildCircleWidget(
                     number: 16,
-                    percentage: 0,
+                    percentage:
+                        _totalTaps == 0
+                            ? 0
+                            : (_tapCounts[16]! / _totalTaps * 100),
 
                     color: margintaPink,
                     left: 170,
@@ -506,6 +561,7 @@ class _HomePageState extends State<HomePage> {
 
   void _handleNumberTap(int number, double left, double top) {
     setState(() {
+      _tapCounts[number] = _tapCounts[number]! + 1;
       if (_selectedNumber == number) {
         _selectedNumber = null;
         _selectedPosition = null;
