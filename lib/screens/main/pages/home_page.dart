@@ -198,13 +198,16 @@ class _HomePageState extends State<HomePage> {
 
                   BuildCircleWidget(
                     number: 1,
+                    percent: 0,
                     color: blueLight,
                     left: 5,
-                    top: 10,
-                    onTap: () => _handleNumberTap(1, 5, 10),
+                    top: 20,
+                    onTap: () => _handleNumberTap(1, 5, 20),
                   ),
                   BuildCircleWidget(
                     number: 2,
+                    percent: 0,
+
                     color: lightGreen,
                     left: 40,
                     top: 150,
@@ -216,31 +219,40 @@ class _HomePageState extends State<HomePage> {
                     left: 170,
                     top: 205,
                     onTap: () => _handleNumberTap(3, 170, 205),
+                    percent: 0,
                   ),
                   BuildCircleWidget(
                     number: 4,
                     color: vivedYellow,
                     left: 290,
                     top: 150,
+                    percent: 0,
+
                     onTap: () => _handleNumberTap(4, 290, 150),
                   ),
                   BuildCircleWidget(
                     number: 5,
                     color: brownishOrange,
+                    percent: 0,
+
                     left: 335,
-                    top: 10,
-                    onTap: () => _handleNumberTap(5, 335, 10),
+                    top: 20,
+                    onTap: () => _handleNumberTap(5, 335, 20),
                   ),
                   BuildCircleWidget(
                     number: 6,
                     color: hotPink,
                     left: 280,
-                    top: 11,
-                    onTap: () => _handleNumberTap(6, 280, 11),
+                    percent: 0,
+
+                    top: 21,
+                    onTap: () => _handleNumberTap(6, 280, 21),
                   ),
                   BuildCircleWidget(
                     number: 7,
                     color: oliveGreen,
+                    percent: 0,
+
                     left: 270,
                     top: 90,
                     onTap: () => _handleNumberTap(7, 270, 90),
@@ -249,6 +261,8 @@ class _HomePageState extends State<HomePage> {
                     number: 8,
                     color: goldenOrange,
                     left: 172,
+                    percent: 0,
+
                     top: 142,
                     onTap: () => _handleNumberTap(8, 172, 142),
                   ),
@@ -257,30 +271,40 @@ class _HomePageState extends State<HomePage> {
                     color: red,
                     left: 60,
                     top: 100,
+                    percent: 0,
+
                     onTap: () => _handleNumberTap(9, 60, 100),
                   ),
                   BuildCircleWidget(
                     number: 10,
                     color: goldenYellow,
                     left: 70,
-                    top: 10,
-                    onTap: () => _handleNumberTap(10, 70, 10),
+                    top: 20,
+                    percent: 0,
+
+                    onTap: () => _handleNumberTap(10, 70, 20),
                   ),
                   BuildCircleWidget(
                     number: 11,
                     color: lightGrey,
                     left: 97,
                     top: 40,
+                    percent: 0,
+
                     onTap: () => _handleNumberTap(11, 97, 40),
                   ),
                   BuildCircleWidget(
                     number: 12,
                     color: purpleBlue,
                     left: 100,
+                    percent: 0,
+
                     top: 115,
                     onTap: () => _handleNumberTap(12, 100, 115),
                   ),
                   BuildCircleWidget(
+                    percent: 0,
+
                     number: 13,
                     color: warmOrange,
                     left: 170,
@@ -289,6 +313,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                   BuildCircleWidget(
                     number: 14,
+                    percent: 0,
+
                     color: royalPurple,
                     left: 240,
                     top: 115,
@@ -297,6 +323,8 @@ class _HomePageState extends State<HomePage> {
                   BuildCircleWidget(
                     number: 15,
                     color: greenishGrey,
+                    percent: 0,
+
                     left: 240,
                     top: 40,
                     onTap: () => _handleNumberTap(15, 240, 40),
@@ -306,6 +334,8 @@ class _HomePageState extends State<HomePage> {
                     color: margintaPink,
                     left: 170,
                     top: 20,
+                    percent: 0,
+
                     onTap: () => _handleNumberTap(16, 170, 20),
                   ),
                   if (_selectedPosition != null) ..._buildConcentricCircles(),

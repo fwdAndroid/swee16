@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:swee16/utils/color_platter.dart';
 
 class BuildCircleWidget extends StatelessWidget {
   int number;
@@ -6,6 +7,7 @@ class BuildCircleWidget extends StatelessWidget {
   double left;
   double top;
   VoidCallback? onTap;
+  double percent;
   BuildCircleWidget({
     super.key,
     required this.number,
@@ -13,6 +15,7 @@ class BuildCircleWidget extends StatelessWidget {
     required this.left,
     required this.top,
     required this.onTap,
+    required this.percent,
   });
 
   @override
@@ -22,15 +25,23 @@ class BuildCircleWidget extends StatelessWidget {
       top: top,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Text(
-            number.toString(),
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-          ),
+        child: Column(
+          children: [
+            Text(
+              percent.toString() + "%",
+              style: TextStyle(fontSize: 10, color: whiteColor),
+            ),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: Text(
+                number.toString(),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+              ),
+            ),
+          ],
         ),
       ),
     );
