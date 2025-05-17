@@ -13,9 +13,9 @@ final fillColor = const Color(0xFF151313).withOpacity(.60);
 final boderColor = const Color(0xFF151313).withOpacity(.10);
 
 //Basket Ball Colors
-final redOrange = Color(0xFFFF4D00); //1
+final blueLight = Color(0xFF4285F4); //1
 final lightGreen = Color(0xFF90EE90); //2
-final brightNeonGreen = Color(0xFF0CFF79); //3
+final brightNeonGreen = Color(0xFF0CFF79).withOpacity(.4); //3
 final vivedYellow = Color(0xFFFFEA00); //4
 final brownishOrange = Color(0xFFB5651D); //5
 final hotPink = Color(0xFFFF7CEE); //6
@@ -29,3 +29,6 @@ final warmOrange = Color(0xFFEE5E10); //13
 final royalPurple = Color(0xFF800080); //14
 final greenishGrey = Color(0xFFA5C7A6); //15
 final margintaPink = Color(0xFFEE10AB); //16
+
+//Selected Color
+final selectedColor = Color(0xFFADD8E6);

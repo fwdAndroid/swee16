@@ -60,7 +60,7 @@ class _ScorePageState extends State<ScorePage> {
                                 children: [
                                   Numberwidget(
                                     title: "1",
-                                    color: redOrange,
+                                    color: blueLight,
                                     number: "1%",
                                   ),
                                   Numberwidget(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:swee16/widget/build_circle_widget.dart';
+import 'package:swee16/widget/circle_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +20,8 @@ class _HomePageState extends State<HomePage> {
   bool isVoiceMode = false;
   List<String> _actionHistory = [];
   bool _showUndo = false;
+  int? _selectedNumber;
+  Offset? _selectedPosition;
 
   @override
   void initState() {
@@ -192,22 +195,120 @@ class _HomePageState extends State<HomePage> {
               child: Stack(
                 children: [
                   Image.asset("assets/basketball.png", width: 400),
-                  _buildCircle(10, goldenYellow, 70, 10),
-                  _buildCircle(11, lightGrey, 97, 40),
-                  _buildCircle(9, red, 60, 100),
-                  _buildCircle(12, purpleBlue, 100, 115),
-                  _buildCircle(2, lightGreen, 40, 150),
-                  _buildCircle(1, redOrange, 5, 10),
-                  _buildCircle(16, margintaPink, 170, 20),
-                  _buildCircle(13, warmOrange, 170, 90),
-                  _buildCircle(8, goldenOrange, 172, 142),
-                  _buildCircle(3, brightNeonGreen, 170, 205),
-                  _buildCircle(14, royalPurple, 240, 115),
-                  _buildCircle(7, oliveGreen, 270, 90),
-                  _buildCircle(4, vivedYellow, 290, 150),
-                  _buildCircle(6, hotPink, 280, 11),
-                  _buildCircle(5, brownishOrange, 335, 10),
-                  _buildCircle(15, greenishGrey, 240, 40),
+
+                  BuildCircleWidget(
+                    number: 1,
+                    color: blueLight,
+                    left: 5,
+                    top: 10,
+                    onTap: () => _handleNumberTap(1, 5, 10),
+                  ),
+                  BuildCircleWidget(
+                    number: 2,
+                    color: lightGreen,
+                    left: 40,
+                    top: 150,
+                    onTap: () => _handleNumberTap(2, 40, 150),
+                  ),
+                  BuildCircleWidget(
+                    number: 3,
+                    color: brightNeonGreen,
+                    left: 170,
+                    top: 205,
+                    onTap: () => _handleNumberTap(3, 170, 205),
+                  ),
+                  BuildCircleWidget(
+                    number: 4,
+                    color: vivedYellow,
+                    left: 290,
+                    top: 150,
+                    onTap: () => _handleNumberTap(4, 290, 150),
+                  ),
+                  BuildCircleWidget(
+                    number: 5,
+                    color: brownishOrange,
+                    left: 335,
+                    top: 10,
+                    onTap: () => _handleNumberTap(5, 335, 10),
+                  ),
+                  BuildCircleWidget(
+                    number: 6,
+                    color: hotPink,
+                    left: 280,
+                    top: 11,
+                    onTap: () => _handleNumberTap(6, 280, 11),
+                  ),
+                  BuildCircleWidget(
+                    number: 7,
+                    color: oliveGreen,
+                    left: 270,
+                    top: 90,
+                    onTap: () => _handleNumberTap(7, 270, 90),
+                  ),
+                  BuildCircleWidget(
+                    number: 8,
+                    color: goldenOrange,
+                    left: 172,
+                    top: 142,
+                    onTap: () => _handleNumberTap(8, 172, 142),
+                  ),
+                  BuildCircleWidget(
+                    number: 9,
+                    color: red,
+                    left: 60,
+                    top: 100,
+                    onTap: () => _handleNumberTap(9, 60, 100),
+                  ),
+                  BuildCircleWidget(
+                    number: 10,
+                    color: goldenYellow,
+                    left: 70,
+                    top: 10,
+                    onTap: () => _handleNumberTap(10, 70, 10),
+                  ),
+                  BuildCircleWidget(
+                    number: 11,
+                    color: lightGrey,
+                    left: 97,
+                    top: 40,
+                    onTap: () => _handleNumberTap(11, 97, 40),
+                  ),
+                  BuildCircleWidget(
+                    number: 12,
+                    color: purpleBlue,
+                    left: 100,
+                    top: 115,
+                    onTap: () => _handleNumberTap(12, 100, 115),
+                  ),
+                  BuildCircleWidget(
+                    number: 13,
+                    color: warmOrange,
+                    left: 170,
+                    top: 90,
+                    onTap: () => _handleNumberTap(13, 170, 90),
+                  ),
+                  BuildCircleWidget(
+                    number: 14,
+                    color: royalPurple,
+                    left: 240,
+                    top: 115,
+                    onTap: () => _handleNumberTap(14, 240, 115),
+                  ),
+                  BuildCircleWidget(
+                    number: 15,
+                    color: greenishGrey,
+                    left: 240,
+                    top: 40,
+                    onTap: () => _handleNumberTap(15, 240, 40),
+                  ),
+                  BuildCircleWidget(
+                    number: 16,
+                    color: margintaPink,
+                    left: 170,
+                    top: 20,
+                    onTap: () => _handleNumberTap(16, 170, 20),
+                  ),
+                  if (_selectedPosition != null) ..._buildConcentricCircles(),
                 ],
               ),
             ),
@@ -331,54 +432,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            Center(
-              child: SizedBox(
-                width: 300,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      hintText: 'Full Name',
-                      hintStyle: GoogleFonts.poppins(
-                        color: labelColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      contentPadding: const EdgeInsets.only(left: 8, top: 15),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(10),
-                        ),
-                        borderSide: BorderSide(
-                          color: Color(0xff200E32).withOpacity(.10),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(10),
-                        ),
-                        borderSide: BorderSide(color: Color(0xff200E32)),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(10),
-                        ),
-                        borderSide: BorderSide(color: Color(0xff200E32)),
-                      ),
-                      fillColor: Color(0xff200E32),
-                      filled: true,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your full name';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -432,28 +485,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCircle(int number, Color color, double left, double top) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 1),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          number.toString(),
-          style: TextStyle(
-            color: blackColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 10,
-          ),
-        ),
-      ),
-    );
+  void _handleNumberTap(int number, double left, double top) {
+    setState(() {
+      if (_selectedNumber == number) {
+        _selectedNumber = null;
+        _selectedPosition = null;
+      } else {
+        _selectedNumber = number;
+        _selectedPosition = Offset(
+          left + 10,
+          top + 10,
+        ); // Center of 20x20 circle
+      }
+    });
+  }
+
+  List<Widget> _buildConcentricCircles() {
+    return [
+      CircleWidget(size: 40, opacity: 1.0, selectedPosition: _selectedPosition),
+      CircleWidget(size: 60, opacity: 0.6, selectedPosition: _selectedPosition),
+    ];
   }
 }
