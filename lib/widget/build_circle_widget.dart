@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:swee16/utils/color_platter.dart';
 
 class BuildCircleWidget extends StatelessWidget {
-  int number;
-  Color color;
-  double left;
-  double top;
-  VoidCallback? onTap;
-  double percent;
+  final int number;
+  final Color color;
+  final double left;
+  final double top;
+  final VoidCallback? onTap;
+  final double percentage;
+
   BuildCircleWidget({
     super.key,
     required this.number,
@@ -15,7 +16,7 @@ class BuildCircleWidget extends StatelessWidget {
     required this.left,
     required this.top,
     required this.onTap,
-    required this.percent,
+    required this.percentage,
   });
 
   @override
@@ -25,24 +26,62 @@ class BuildCircleWidget extends StatelessWidget {
       top: top,
       child: GestureDetector(
         onTap: onTap,
-        child: Column(
-          children: [
-            Text(
-              percent.toString() + "%",
-              style: TextStyle(fontSize: 10, color: whiteColor),
-            ),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: Text(
-                number.toString(),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-              ),
-            ),
-          ],
+        child:
+            number == 3
+                ? _buildNumberWithRightPercentage()
+                : _buildNumberWithTopPercentage(),
+      ),
+    );
+  }
+
+  // For number 3 (percentage on the right)
+  Widget _buildNumberWithRightPercentage() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCircle(),
+        const SizedBox(width: 4),
+        Text(
+          percentage.toString(),
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            color: whiteColor,
+          ),
         ),
+      ],
+    );
+  }
+
+  // For other numbers (percentage on top)
+  Widget _buildNumberWithTopPercentage() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          percentage.toString(),
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            color: whiteColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        _buildCircle(),
+      ],
+    );
+  }
+
+  // Reusable circle widget
+  Widget _buildCircle() {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: Text(
+        number.toString(),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
       ),
     );
   }
