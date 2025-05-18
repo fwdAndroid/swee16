@@ -32,3 +32,43 @@ final margintaPink = Color(0xFFEE10AB); //16
 
 //Selected Color
 final selectedColor = Color(0xFFADD8E6);
+
+//gET THE COLOR
+Color getNumberColor(int number) {
+  switch (number) {
+    case 1:
+      return blueLight;
+    case 2:
+      return lightGreen;
+    case 3:
+      return brightNeonGreen;
+    case 4:
+      return vivedYellow;
+    case 5:
+      return brownishOrange;
+    case 6:
+      return hotPink;
+    case 7:
+      return oliveGreen;
+    case 8:
+      return goldenOrange;
+    case 9:
+      return red;
+    case 10:
+      return goldenYellow;
+    case 11:
+      return lightGrey;
+    case 12:
+      return purpleBlue;
+    case 13:
+      return warmOrange;
+    case 14:
+      return royalPurple;
+    case 15:
+      return greenishGrey;
+    case 16:
+      return margintaPink;
+    default:
+      return whiteColor;
+  }
+}

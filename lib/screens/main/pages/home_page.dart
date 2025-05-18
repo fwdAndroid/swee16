@@ -443,22 +443,59 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Padding(
-            //   padding: const EdgeInsets.all(8.0),
-            //   child: Row(
-            //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //     children: [
-            //       Text(
-            //         'Over All Percentage: ',
-            //         style: TextStyle(color: whiteColor, fontSize: 16),
-            //       ),
-            //       Text(
-            //         '${calculatePercentage(totalGood, totalMissed)}%',
-            //         style: TextStyle(color: whiteColor, fontSize: 16),
-            //       ),
-            //     ],
-            //   ),
-            // ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, right: 8, bottom: 9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        "Individual Shot: ",
+                        style: TextStyle(color: whiteColor, fontSize: 16),
+                      ),
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color:
+                              _selectedNumber != null
+                                  ? getNumberColor(_selectedNumber!)
+                                  : whiteColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            textAlign: TextAlign.center,
+                            _selectedNumber != null
+                                ? '$_selectedNumber'
+                                : 'None',
+                            style: TextStyle(
+                              color:
+                                  _selectedNumber != null
+                                      ? whiteColor // White text for contrast
+                                      : blackColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${_selectedNumber != null ? _goodCounts[_selectedNumber] ?? 0 : 0} Good / '
+                    '${_selectedNumber != null ? _missedCounts[_selectedNumber] ?? 0 : 0} Missed',
+                    style: TextStyle(
+                      color: whiteColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
