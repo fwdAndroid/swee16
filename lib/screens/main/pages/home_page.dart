@@ -15,23 +15,21 @@ class _HomePageState extends State<HomePage> {
   TextEditingController emailController = TextEditingController();
   stt.SpeechToText speech = stt.SpeechToText();
   bool isListening = false;
-  int goodCount = 0;
-  int missedCount = 0;
   bool isVoiceMode = false;
-  List<String> _actionHistory = [];
+  List<Map<String, dynamic>> _actionHistory = [];
   bool _showUndo = false;
   int? _selectedNumber;
   Offset? _selectedPosition;
-  Map<int, int> _tapCounts = {for (var i = 1; i <= 16; i++) i: 0};
-  int get _totalTaps => _tapCounts.values.reduce((a, b) => a + b);
+  Map<int, int> _goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+  Map<int, int> _missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+
+  int get totalGood => _goodCounts.values.fold(0, (a, b) => a + b);
+  int get totalMissed => _missedCounts.values.fold(0, (a, b) => a + b);
 
   @override
   void initState() {
     super.initState();
     _initSpeech();
-    // for (int i = 1; i <= 16; i++) {
-    //   _tapCounts[i] = 0;
-    // }
   }
 
   void _initSpeech() async {
@@ -83,13 +81,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _incrementCounter(String type) {
+    if (_selectedNumber == null) return;
+
     setState(() {
       if (type == 'good') {
-        goodCount++;
-      } else {
-        missedCount++;
+        _goodCounts[_selectedNumber!] = _goodCounts[_selectedNumber!]! + 1;
+      } else if (type == 'missed') {
+        _missedCounts[_selectedNumber!] = _missedCounts[_selectedNumber!]! + 1;
       }
-      _actionHistory.add(type);
+      _actionHistory.add({'type': type, 'number': _selectedNumber!});
       _showUndo = true;
     });
   }
@@ -97,12 +97,15 @@ class _HomePageState extends State<HomePage> {
   void _undoLastAction() {
     if (_actionHistory.isEmpty) return;
 
+    var lastAction = _actionHistory.removeLast();
+    int number = lastAction['number'];
+    String type = lastAction['type'];
+
     setState(() {
-      String lastAction = _actionHistory.removeLast();
-      if (lastAction == 'good' && goodCount > 0) {
-        goodCount--;
-      } else if (lastAction == 'missed' && missedCount > 0) {
-        missedCount--;
+      if (type == 'good' && _goodCounts[number]! > 0) {
+        _goodCounts[number] = _goodCounts[number]! - 1;
+      } else if (type == 'missed' && _missedCounts[number]! > 0) {
+        _missedCounts[number] = _missedCounts[number]! - 1;
       }
       _showUndo = _actionHistory.isNotEmpty;
     });
@@ -207,17 +210,21 @@ class _HomePageState extends State<HomePage> {
                     left: 5,
                     top: 7,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[1]! + _missedCounts[1]!) == 0)
                             ? 0
-                            : (_tapCounts[1]! / _totalTaps * 100),
+                            : (_goodCounts[1]! /
+                                    (_goodCounts[1]! + _missedCounts[1]!)) *
+                                100,
 
                     onTap: () => _handleNumberTap(1, 5, 7),
                   ),
                   BuildCircleWidget(
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[2]! + _missedCounts[2]!) == 0)
                             ? 0
-                            : (_tapCounts[2]! / _totalTaps * 100),
+                            : (_goodCounts[2]! /
+                                    (_goodCounts[2]! + _missedCounts[2]!)) *
+                                100,
                     number: 2,
                     color: lightGreen,
                     left: 40,
@@ -229,9 +236,11 @@ class _HomePageState extends State<HomePage> {
                     color: brightNeonGreen,
                     left: 170,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[3]! + _missedCounts[3]!) == 0)
                             ? 0
-                            : (_tapCounts[3]! / _totalTaps * 100),
+                            : (_goodCounts[3]! /
+                                    (_goodCounts[3]! + _missedCounts[3]!)) *
+                                100,
                     top: 200,
                     onTap: () => _handleNumberTap(3, 170, 200),
                   ),
@@ -241,9 +250,11 @@ class _HomePageState extends State<HomePage> {
                     left: 290,
                     top: 150,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[4]! + _missedCounts[4]!) == 0)
                             ? 0
-                            : (_tapCounts[4]! / _totalTaps * 100),
+                            : (_goodCounts[4]! /
+                                    (_goodCounts[4]! + _missedCounts[4]!)) *
+                                100,
 
                     onTap: () => _handleNumberTap(4, 290, 150),
                   ),
@@ -253,17 +264,21 @@ class _HomePageState extends State<HomePage> {
                     left: 335,
                     top: 7,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[5]! + _missedCounts[5]!) == 0)
                             ? 0
-                            : (_tapCounts[5]! / _totalTaps * 100),
+                            : (_goodCounts[5]! /
+                                    (_goodCounts[5]! + _missedCounts[5]!)) *
+                                100,
                     onTap: () => _handleNumberTap(5, 335, 7),
                   ),
                   BuildCircleWidget(
                     number: 6,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[6]! + _missedCounts[6]!) == 0)
                             ? 0
-                            : (_tapCounts[6]! / _totalTaps * 100),
+                            : (_goodCounts[6]! /
+                                    (_goodCounts[6]! + _missedCounts[6]!)) *
+                                100,
                     color: hotPink,
                     left: 280,
                     top: 7,
@@ -272,9 +287,11 @@ class _HomePageState extends State<HomePage> {
                   BuildCircleWidget(
                     number: 7,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[7]! + _missedCounts[7]!) == 0)
                             ? 0
-                            : (_tapCounts[7]! / _totalTaps * 100),
+                            : (_goodCounts[7]! /
+                                    (_goodCounts[7]! + _missedCounts[7]!)) *
+                                100,
 
                     color: oliveGreen,
                     left: 270,
@@ -285,9 +302,11 @@ class _HomePageState extends State<HomePage> {
                     number: 8,
                     color: goldenOrange,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[8]! + _missedCounts[8]!) == 0)
                             ? 0
-                            : (_tapCounts[8]! / _totalTaps * 100),
+                            : (_goodCounts[8]! /
+                                    (_goodCounts[8]! + _missedCounts[8]!)) *
+                                100,
                     left: 172,
                     top: 132,
                     onTap: () => _handleNumberTap(8, 172, 132),
@@ -298,9 +317,11 @@ class _HomePageState extends State<HomePage> {
                     left: 60,
                     top: 100,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[9]! + _missedCounts[9]!) == 0)
                             ? 0
-                            : (_tapCounts[9]! / _totalTaps * 100),
+                            : (_goodCounts[9]! /
+                                    (_goodCounts[9]! + _missedCounts[9]!)) *
+                                100,
 
                     onTap: () => _handleNumberTap(9, 60, 100),
                   ),
@@ -310,9 +331,11 @@ class _HomePageState extends State<HomePage> {
                     left: 60,
                     top: 7,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[10]! + _missedCounts[10]!) == 0)
                             ? 0
-                            : (_tapCounts[10]! / _totalTaps * 100),
+                            : (_goodCounts[10]! /
+                                    (_goodCounts[10]! + _missedCounts[10]!)) *
+                                100,
                     onTap: () => _handleNumberTap(10, 70, 20),
                   ),
                   BuildCircleWidget(
@@ -321,17 +344,21 @@ class _HomePageState extends State<HomePage> {
                     left: 97,
                     top: 27,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[11]! + _missedCounts[11]!) == 0)
                             ? 0
-                            : (_tapCounts[11]! / _totalTaps * 100),
+                            : (_goodCounts[11]! /
+                                    (_goodCounts[11]! + _missedCounts[11]!)) *
+                                100,
                     onTap: () => _handleNumberTap(11, 97, 27),
                   ),
                   BuildCircleWidget(
                     number: 12,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[12]! + _missedCounts[12]!) == 0)
                             ? 0
-                            : (_tapCounts[12]! / _totalTaps * 100),
+                            : (_goodCounts[12]! /
+                                    (_goodCounts[12]! + _missedCounts[12]!)) *
+                                100,
                     color: purpleBlue,
                     left: 100,
                     top: 104,
@@ -342,9 +369,11 @@ class _HomePageState extends State<HomePage> {
                     color: warmOrange,
                     left: 170,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[13]! + _missedCounts[13]!) == 0)
                             ? 0
-                            : (_tapCounts[13]! / _totalTaps * 100),
+                            : (_goodCounts[13]! /
+                                    (_goodCounts[13]! + _missedCounts[13]!)) *
+                                100,
                     top: 77,
                     onTap: () => _handleNumberTap(13, 170, 77),
                   ),
@@ -354,18 +383,22 @@ class _HomePageState extends State<HomePage> {
                     left: 240,
                     top: 100,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[14]! + _missedCounts[14]!) == 0)
                             ? 0
-                            : (_tapCounts[14]! / _totalTaps * 100),
+                            : (_goodCounts[14]! /
+                                    (_goodCounts[14]! + _missedCounts[14]!)) *
+                                100,
                     onTap: () => _handleNumberTap(14, 240, 100),
                   ),
                   BuildCircleWidget(
                     number: 15,
                     color: greenishGrey,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[15]! + _missedCounts[15]!) == 0)
                             ? 0
-                            : (_tapCounts[15]! / _totalTaps * 100),
+                            : (_goodCounts[15]! /
+                                    (_goodCounts[15]! + _missedCounts[15]!)) *
+                                100,
                     left: 240,
                     top: 27,
                     onTap: () => _handleNumberTap(15, 240, 27),
@@ -373,9 +406,11 @@ class _HomePageState extends State<HomePage> {
                   BuildCircleWidget(
                     number: 16,
                     percentage:
-                        _totalTaps == 0
+                        ((_goodCounts[16]! + _missedCounts[16]!) == 0)
                             ? 0
-                            : (_tapCounts[16]! / _totalTaps * 100),
+                            : (_goodCounts[16]! /
+                                    (_goodCounts[16]! + _missedCounts[16]!)) *
+                                100,
 
                     color: margintaPink,
                     left: 170,
@@ -411,7 +446,7 @@ class _HomePageState extends State<HomePage> {
                                   textAlign: TextAlign.center,
                                 ),
                                 Text(
-                                  goodCount.toString(),
+                                  totalGood.toString(),
                                   style: TextStyle(
                                     color: whiteColor,
                                     fontSize: 13,
@@ -427,10 +462,6 @@ class _HomePageState extends State<HomePage> {
                           decoration: BoxDecoration(
                             color: mainColor,
                             borderRadius: BorderRadius.circular(10),
-                            border:
-                                !isVoiceMode
-                                    ? Border.all(color: Colors.white, width: 2)
-                                    : null,
                           ),
                         ),
                       ),
@@ -455,7 +486,7 @@ class _HomePageState extends State<HomePage> {
                                   textAlign: TextAlign.center,
                                 ),
                                 Text(
-                                  missedCount.toString(),
+                                  totalMissed.toString(),
                                   style: TextStyle(
                                     color: whiteColor,
                                     fontSize: 13,
@@ -471,10 +502,6 @@ class _HomePageState extends State<HomePage> {
                           decoration: BoxDecoration(
                             color: red,
                             borderRadius: BorderRadius.circular(10),
-                            border:
-                                !isVoiceMode
-                                    ? Border.all(color: Colors.white, width: 2)
-                                    : null,
                           ),
                         ),
                       ),
@@ -561,16 +588,12 @@ class _HomePageState extends State<HomePage> {
 
   void _handleNumberTap(int number, double left, double top) {
     setState(() {
-      _tapCounts[number] = _tapCounts[number]! + 1;
       if (_selectedNumber == number) {
         _selectedNumber = null;
         _selectedPosition = null;
       } else {
         _selectedNumber = number;
-        _selectedPosition = Offset(
-          left + 10,
-          top + 25,
-        ); // Center of 20x20 circle
+        _selectedPosition = Offset(left + 10, top + 25);
       }
     });
   }
