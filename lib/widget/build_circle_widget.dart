@@ -64,7 +64,7 @@ class BuildCircleWidget extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: whiteColor,
           ),
-        ),
+        ), 
         const SizedBox(height: 2),
         _buildCircle(),
       ],
