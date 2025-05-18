@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:swee16/helper/percentage_helper.dart';
+import 'package:swee16/services/database_service.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:swee16/widget/build_circle_widget.dart';
@@ -28,6 +30,7 @@ class _HomePageState extends State<HomePage> {
 
   int get totalGood => _goodCounts.values.fold(0, (a, b) => a + b);
   int get totalMissed => _missedCounts.values.fold(0, (a, b) => a + b);
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void initState() {
@@ -48,6 +51,30 @@ class _HomePageState extends State<HomePage> {
     );
     if (!available) {
       print('Speech recognition not available');
+    }
+  }
+
+  Future<void> _savePracticeResults() async {
+    final success = await _firestoreService.savePracticeSession(
+      _goodCounts,
+      _missedCounts,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Practice session saved!' : 'Failed to save session',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (success) {
+      //Clear counts after successful save if needed
+      setState(() {
+        _goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        _missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+      });
     }
   }
 
@@ -181,22 +208,17 @@ class _HomePageState extends State<HomePage> {
                     color: blueLight,
                     left: 5,
                     top: 7,
-                    percentage:
-                        ((_goodCounts[1]! + _missedCounts[1]!) == 0)
-                            ? 0
-                            : (_goodCounts[1]! /
-                                    (_goodCounts[1]! + _missedCounts[1]!)) *
-                                100,
-
+                    percentage: calculatePercentage(
+                      _goodCounts[1]!,
+                      _missedCounts[1]!,
+                    ),
                     onTap: () => _handleNumberTap(1, 5, 7),
                   ),
                   BuildCircleWidget(
-                    percentage:
-                        ((_goodCounts[2]! + _missedCounts[2]!) == 0)
-                            ? 0
-                            : (_goodCounts[2]! /
-                                    (_goodCounts[2]! + _missedCounts[2]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[2]!,
+                      _missedCounts[2]!,
+                    ),
                     number: 2,
                     color: lightGreen,
                     left: 40,
@@ -207,12 +229,10 @@ class _HomePageState extends State<HomePage> {
                     number: 3,
                     color: brightNeonGreen,
                     left: 170,
-                    percentage:
-                        ((_goodCounts[3]! + _missedCounts[3]!) == 0)
-                            ? 0
-                            : (_goodCounts[3]! /
-                                    (_goodCounts[3]! + _missedCounts[3]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[3]!,
+                      _missedCounts[3]!,
+                    ),
                     top: 200,
                     onTap: () => _handleNumberTap(3, 170, 200),
                   ),
@@ -221,13 +241,10 @@ class _HomePageState extends State<HomePage> {
                     color: vivedYellow,
                     left: 290,
                     top: 150,
-                    percentage:
-                        ((_goodCounts[4]! + _missedCounts[4]!) == 0)
-                            ? 0
-                            : (_goodCounts[4]! /
-                                    (_goodCounts[4]! + _missedCounts[4]!)) *
-                                100,
-
+                    percentage: calculatePercentage(
+                      _goodCounts[4]!,
+                      _missedCounts[4]!,
+                    ),
                     onTap: () => _handleNumberTap(4, 290, 150),
                   ),
                   BuildCircleWidget(
@@ -235,22 +252,18 @@ class _HomePageState extends State<HomePage> {
                     color: brownishOrange,
                     left: 335,
                     top: 7,
-                    percentage:
-                        ((_goodCounts[5]! + _missedCounts[5]!) == 0)
-                            ? 0
-                            : (_goodCounts[5]! /
-                                    (_goodCounts[5]! + _missedCounts[5]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[5]!,
+                      _missedCounts[5]!,
+                    ),
                     onTap: () => _handleNumberTap(5, 335, 7),
                   ),
                   BuildCircleWidget(
                     number: 6,
-                    percentage:
-                        ((_goodCounts[6]! + _missedCounts[6]!) == 0)
-                            ? 0
-                            : (_goodCounts[6]! /
-                                    (_goodCounts[6]! + _missedCounts[6]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[6]!,
+                      _missedCounts[6]!,
+                    ),
                     color: hotPink,
                     left: 280,
                     top: 7,
@@ -258,12 +271,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                   BuildCircleWidget(
                     number: 7,
-                    percentage:
-                        ((_goodCounts[7]! + _missedCounts[7]!) == 0)
-                            ? 0
-                            : (_goodCounts[7]! /
-                                    (_goodCounts[7]! + _missedCounts[7]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[7]!,
+                      _missedCounts[7]!,
+                    ),
 
                     color: oliveGreen,
                     left: 270,
@@ -273,12 +284,10 @@ class _HomePageState extends State<HomePage> {
                   BuildCircleWidget(
                     number: 8,
                     color: goldenOrange,
-                    percentage:
-                        ((_goodCounts[8]! + _missedCounts[8]!) == 0)
-                            ? 0
-                            : (_goodCounts[8]! /
-                                    (_goodCounts[8]! + _missedCounts[8]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[8]!,
+                      _missedCounts[8]!,
+                    ),
                     left: 172,
                     top: 132,
                     onTap: () => _handleNumberTap(8, 172, 132),
@@ -288,13 +297,10 @@ class _HomePageState extends State<HomePage> {
                     color: red,
                     left: 60,
                     top: 100,
-                    percentage:
-                        ((_goodCounts[9]! + _missedCounts[9]!) == 0)
-                            ? 0
-                            : (_goodCounts[9]! /
-                                    (_goodCounts[9]! + _missedCounts[9]!)) *
-                                100,
-
+                    percentage: calculatePercentage(
+                      _goodCounts[9]!,
+                      _missedCounts[9]!,
+                    ),
                     onTap: () => _handleNumberTap(9, 60, 100),
                   ),
                   BuildCircleWidget(
@@ -302,12 +308,10 @@ class _HomePageState extends State<HomePage> {
                     color: goldenYellow,
                     left: 60,
                     top: 7,
-                    percentage:
-                        ((_goodCounts[10]! + _missedCounts[10]!) == 0)
-                            ? 0
-                            : (_goodCounts[10]! /
-                                    (_goodCounts[10]! + _missedCounts[10]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[10]!,
+                      _missedCounts[10]!,
+                    ),
                     onTap: () => _handleNumberTap(10, 60, 7),
                   ),
                   BuildCircleWidget(
@@ -315,22 +319,18 @@ class _HomePageState extends State<HomePage> {
                     color: lightGrey,
                     left: 97,
                     top: 27,
-                    percentage:
-                        ((_goodCounts[11]! + _missedCounts[11]!) == 0)
-                            ? 0
-                            : (_goodCounts[11]! /
-                                    (_goodCounts[11]! + _missedCounts[11]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[11]!,
+                      _missedCounts[11]!,
+                    ),
                     onTap: () => _handleNumberTap(11, 97, 27),
                   ),
                   BuildCircleWidget(
                     number: 12,
-                    percentage:
-                        ((_goodCounts[12]! + _missedCounts[12]!) == 0)
-                            ? 0
-                            : (_goodCounts[12]! /
-                                    (_goodCounts[12]! + _missedCounts[12]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[12]!,
+                      _missedCounts[12]!,
+                    ),
                     color: purpleBlue,
                     left: 100,
                     top: 104,
@@ -340,12 +340,10 @@ class _HomePageState extends State<HomePage> {
                     number: 13,
                     color: warmOrange,
                     left: 170,
-                    percentage:
-                        ((_goodCounts[13]! + _missedCounts[13]!) == 0)
-                            ? 0
-                            : (_goodCounts[13]! /
-                                    (_goodCounts[13]! + _missedCounts[13]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[13]!,
+                      _missedCounts[13]!,
+                    ),
                     top: 77,
                     onTap: () => _handleNumberTap(13, 170, 77),
                   ),
@@ -354,36 +352,29 @@ class _HomePageState extends State<HomePage> {
                     color: royalPurple,
                     left: 240,
                     top: 100,
-                    percentage:
-                        ((_goodCounts[14]! + _missedCounts[14]!) == 0)
-                            ? 0
-                            : (_goodCounts[14]! /
-                                    (_goodCounts[14]! + _missedCounts[14]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[14]!,
+                      _missedCounts[14]!,
+                    ),
                     onTap: () => _handleNumberTap(14, 240, 100),
                   ),
                   BuildCircleWidget(
                     number: 15,
                     color: greenishGrey,
-                    percentage:
-                        ((_goodCounts[15]! + _missedCounts[15]!) == 0)
-                            ? 0
-                            : (_goodCounts[15]! /
-                                    (_goodCounts[15]! + _missedCounts[15]!)) *
-                                100,
+                    percentage: calculatePercentage(
+                      _goodCounts[15]!,
+                      _missedCounts[15]!,
+                    ),
                     left: 240,
                     top: 27,
                     onTap: () => _handleNumberTap(15, 240, 27),
                   ),
                   BuildCircleWidget(
                     number: 16,
-                    percentage:
-                        ((_goodCounts[16]! + _missedCounts[16]!) == 0)
-                            ? 0
-                            : (_goodCounts[16]! /
-                                    (_goodCounts[16]! + _missedCounts[16]!)) *
-                                100,
-
+                    percentage: calculatePercentage(
+                      _goodCounts[16]!,
+                      _missedCounts[16]!,
+                    ),
                     color: margintaPink,
                     left: 170,
                     top: 20,
@@ -437,7 +428,7 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   FunctionsButtonWidget(
-                    onTap: () {},
+                    onTap: _savePracticeResults,
                     color: mainColor,
                     titleText: 'Save Practice',
                   ),

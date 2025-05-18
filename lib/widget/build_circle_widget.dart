@@ -7,7 +7,7 @@ class BuildCircleWidget extends StatelessWidget {
   final double left;
   final double top;
   final VoidCallback? onTap;
-  final double percentage;
+  final int percentage;
 
   BuildCircleWidget({
     super.key,
@@ -64,7 +64,7 @@ class BuildCircleWidget extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: whiteColor,
           ),
-        ), 
+        ),
         const SizedBox(height: 2),
         _buildCircle(),
       ],
