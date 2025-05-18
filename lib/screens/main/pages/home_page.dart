@@ -3,6 +3,9 @@ import 'package:swee16/utils/color_platter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:swee16/widget/build_circle_widget.dart';
 import 'package:swee16/widget/circle_widget.dart';
+import 'package:swee16/widget/functions_button_widget.dart';
+import 'package:swee16/widget/good_missed_button_widget.dart';
+import 'package:swee16/widget/voice_manual_button_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -130,60 +133,29 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  GestureDetector(
+                  VoiceManualWidget(
+                    styleColor: blackColor,
                     onTap: () {
                       setState(() {
                         isVoiceMode = false;
                         _stopListening();
                       });
                     },
-                    child: Container(
-                      child: Center(
-                        child: Text(
-                          'Manually',
-                          style: TextStyle(
-                            color: blackColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      width: 142,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: isVoiceMode ? labelColor : mainColor,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
+                    color: !isVoiceMode ? mainColor : labelColor,
+                    titleText: 'Manually',
                   ),
+
                   const SizedBox(width: 10),
-                  GestureDetector(
+                  VoiceManualWidget(
+                    styleColor: blackColor,
                     onTap: () {
                       setState(() {
                         isVoiceMode = true;
                         _startListening();
                       });
                     },
-                    child: Container(
-                      child: Center(
-                        child: Text(
-                          'Voice',
-                          style: TextStyle(
-                            color: blackColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      width: 142,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: isVoiceMode ? mainColor : labelColor,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
+                    color: isVoiceMode ? mainColor : labelColor,
+                    titleText: 'Voice',
                   ),
                 ],
               ),
@@ -336,7 +308,7 @@ class _HomePageState extends State<HomePage> {
                             : (_goodCounts[10]! /
                                     (_goodCounts[10]! + _missedCounts[10]!)) *
                                 100,
-                    onTap: () => _handleNumberTap(10, 70, 20),
+                    onTap: () => _handleNumberTap(10, 60, 7),
                   ),
                   BuildCircleWidget(
                     number: 11,
@@ -428,107 +400,33 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
+                      GoodMissedButtonWidget(
                         onTap:
                             () =>
                                 !isVoiceMode ? _incrementCounter('good') : null,
-                        child: Container(
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Good',
-                                  style: TextStyle(
-                                    color: whiteColor,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  totalGood.toString(),
-                                  style: TextStyle(
-                                    color: whiteColor,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                          width: 142,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: mainColor,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                        color: mainColor,
+                        titleText: 'Good',
+                        subtitleText: totalGood.toString(),
                       ),
                       const SizedBox(width: 10),
-                      GestureDetector(
+                      GoodMissedButtonWidget(
                         onTap:
                             () =>
                                 !isVoiceMode
                                     ? _incrementCounter('missed')
                                     : null,
-                        child: Container(
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Missed',
-                                  style: TextStyle(
-                                    color: whiteColor,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  totalMissed.toString(),
-                                  style: TextStyle(
-                                    color: whiteColor,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                          width: 142,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: red,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                        color: red,
+                        titleText: 'Missed',
+                        subtitleText: totalMissed.toString(),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.undo, color: whiteColor),
+                        onPressed: _undoLastAction,
+                        tooltip: "Undo Last Action",
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: _undoLastAction,
-                    child: Container(
-                      width: 142,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Undo Last Action',
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -538,44 +436,17 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    child: Center(
-                      child: Text(
-                        'Save practice',
-                        style: TextStyle(
-                          color: whiteColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    width: 142,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: mainColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                  FunctionsButtonWidget(
+                    onTap: () {},
+                    color: mainColor,
+                    titleText: 'Save Practice',
                   ),
+
                   const SizedBox(width: 10),
-                  Container(
-                    child: Center(
-                      child: Text(
-                        'Delete practice',
-                        style: TextStyle(
-                          color: whiteColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    width: 142,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                  FunctionsButtonWidget(
+                    onTap: () {},
+                    color: red,
+                    titleText: 'Delete practice',
                   ),
                 ],
               ),
