@@ -410,18 +410,55 @@ class _HomePageState extends State<HomePage> {
                         titleText: 'Missed',
                         subtitleText: totalMissed.toString(),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.undo, color: whiteColor),
-                        onPressed: _undoLastAction,
-                        tooltip: "Undo Last Action",
-                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
+                  Center(
+                    child: TextButton(
+                      onPressed: _undoLastAction,
+                      child: Text(
+                        "Undo Actions",
+                        style: TextStyle(color: whiteColor),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
 
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Over All Percentage: ',
+                    style: TextStyle(color: whiteColor, fontSize: 16),
+                  ),
+                  Text(
+                    '${calculatePercentage(totalGood, totalMissed)}%',
+                    style: TextStyle(color: whiteColor, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+
+            // Padding(
+            //   padding: const EdgeInsets.all(8.0),
+            //   child: Row(
+            //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //     children: [
+            //       Text(
+            //         'Over All Percentage: ',
+            //         style: TextStyle(color: whiteColor, fontSize: 16),
+            //       ),
+            //       Text(
+            //         '${calculatePercentage(totalGood, totalMissed)}%',
+            //         style: TextStyle(color: whiteColor, fontSize: 16),
+            //       ),
+            //     ],
+            //   ),
+            // ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(

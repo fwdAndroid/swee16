@@ -44,7 +44,7 @@ class GoodMissedButtonWidget extends StatelessWidget {
             ],
           ),
         ),
-        width: 100,
+        width: 140,
         height: 60,
         decoration: BoxDecoration(
           color: color,
