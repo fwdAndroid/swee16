@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swee16/helper/percentage_helper.dart';
-import 'package:swee16/services/database_service.dart';
+import 'package:swee16/helper/variables.dart';
 import 'package:swee16/utils/color_platter.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:swee16/widget/build_circle_widget.dart';
 import 'package:swee16/widget/circle_widget.dart';
 import 'package:swee16/widget/functions_button_widget.dart';
@@ -17,128 +16,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  TextEditingController emailController = TextEditingController();
-  stt.SpeechToText speech = stt.SpeechToText();
-  bool isListening = false;
-  bool isVoiceMode = false;
-  List<Map<String, dynamic>> _actionHistory = [];
-  bool _showUndo = false;
-  int? _selectedNumber;
-  Offset? _selectedPosition;
-  Map<int, int> _goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-  Map<int, int> _missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-
-  int get totalGood => _goodCounts.values.fold(0, (a, b) => a + b);
-  int get totalMissed => _missedCounts.values.fold(0, (a, b) => a + b);
-  final FirestoreService _firestoreService = FirestoreService();
-
   @override
   void initState() {
     super.initState();
     _initSpeech();
-  }
-
-  void _initSpeech() async {
-    bool available = await speech.initialize(
-      onStatus: (status) {
-        setState(() {
-          isListening = status == 'listening';
-        });
-      },
-      onError: (error) {
-        print('Error: $error');
-      },
-    );
-    if (!available) {
-      print('Speech recognition not available');
-    }
-  }
-
-  Future<void> _savePracticeResults() async {
-    final success = await _firestoreService.savePracticeSession(
-      _goodCounts,
-      _missedCounts,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Practice session saved!' : 'Failed to save session',
-        ),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
-
-    if (success) {
-      //Clear counts after successful save if needed
-      setState(() {
-        _goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        _missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-      });
-    }
-  }
-
-  void _startListening() async {
-    if (!isListening) {
-      bool available = await speech.initialize();
-      if (available) {
-        setState(() {
-          isListening = true;
-        });
-        speech.listen(
-          onResult: (result) {
-            if (result.finalResult) {
-              String recognizedText = result.recognizedWords.toLowerCase();
-              if (recognizedText.contains('good')) {
-                _incrementCounter('good');
-              } else if (recognizedText.contains('missed')) {
-                _incrementCounter('missed');
-              }
-            }
-          },
-        );
-      }
-    }
-  }
-
-  void _stopListening() {
-    if (isListening) {
-      speech.stop();
-      setState(() {
-        isListening = false;
-      });
-    }
-  }
-
-  void _incrementCounter(String type) {
-    if (_selectedNumber == null) return;
-
-    setState(() {
-      if (type == 'good') {
-        _goodCounts[_selectedNumber!] = _goodCounts[_selectedNumber!]! + 1;
-      } else if (type == 'missed') {
-        _missedCounts[_selectedNumber!] = _missedCounts[_selectedNumber!]! + 1;
-      }
-      _actionHistory.add({'type': type, 'number': _selectedNumber!});
-      _showUndo = true;
-    });
-  }
-
-  void _undoLastAction() {
-    if (_actionHistory.isEmpty) return;
-
-    var lastAction = _actionHistory.removeLast();
-    int number = lastAction['number'];
-    String type = lastAction['type'];
-
-    setState(() {
-      if (type == 'good' && _goodCounts[number]! > 0) {
-        _goodCounts[number] = _goodCounts[number]! - 1;
-      } else if (type == 'missed' && _missedCounts[number]! > 0) {
-        _missedCounts[number] = _missedCounts[number]! - 1;
-      }
-      _showUndo = _actionHistory.isNotEmpty;
-    });
   }
 
   @override
@@ -209,15 +90,15 @@ class _HomePageState extends State<HomePage> {
                     left: 5,
                     top: 7,
                     percentage: calculatePercentage(
-                      _goodCounts[1]!,
-                      _missedCounts[1]!,
+                      goodCounts[1]!,
+                      missedCounts[1]!,
                     ),
                     onTap: () => _handleNumberTap(1, 5, 7),
                   ),
                   BuildCircleWidget(
                     percentage: calculatePercentage(
-                      _goodCounts[2]!,
-                      _missedCounts[2]!,
+                      goodCounts[2]!,
+                      missedCounts[2]!,
                     ),
                     number: 2,
                     color: lightGreen,
@@ -230,11 +111,11 @@ class _HomePageState extends State<HomePage> {
                     color: brightNeonGreen,
                     left: 170,
                     percentage: calculatePercentage(
-                      _goodCounts[3]!,
-                      _missedCounts[3]!,
+                      goodCounts[3]!,
+                      missedCounts[3]!,
                     ),
                     top: 200,
-                    onTap: () => _handleNumberTap(3, 170, 200),
+                    onTap: () => _handleNumberTap(3, 170, 185),
                   ),
                   BuildCircleWidget(
                     number: 4,
@@ -242,8 +123,8 @@ class _HomePageState extends State<HomePage> {
                     left: 290,
                     top: 150,
                     percentage: calculatePercentage(
-                      _goodCounts[4]!,
-                      _missedCounts[4]!,
+                      goodCounts[4]!,
+                      missedCounts[4]!,
                     ),
                     onTap: () => _handleNumberTap(4, 290, 150),
                   ),
@@ -253,40 +134,39 @@ class _HomePageState extends State<HomePage> {
                     left: 335,
                     top: 7,
                     percentage: calculatePercentage(
-                      _goodCounts[5]!,
-                      _missedCounts[5]!,
+                      goodCounts[5]!,
+                      missedCounts[5]!,
                     ),
                     onTap: () => _handleNumberTap(5, 335, 7),
                   ),
                   BuildCircleWidget(
                     number: 6,
                     percentage: calculatePercentage(
-                      _goodCounts[6]!,
-                      _missedCounts[6]!,
+                      goodCounts[6]!,
+                      missedCounts[6]!,
                     ),
                     color: hotPink,
                     left: 280,
-                    top: 7,
-                    onTap: () => _handleNumberTap(6, 280, 7),
+                    top: 5,
+                    onTap: () => _handleNumberTap(6, 280, 5),
                   ),
                   BuildCircleWidget(
                     number: 7,
                     percentage: calculatePercentage(
-                      _goodCounts[7]!,
-                      _missedCounts[7]!,
+                      goodCounts[7]!,
+                      missedCounts[7]!,
                     ),
-
                     color: oliveGreen,
-                    left: 270,
-                    top: 90,
-                    onTap: () => _handleNumberTap(7, 270, 90),
+                    left: 280,
+                    top: 70,
+                    onTap: () => _handleNumberTap(7, 280, 70),
                   ),
                   BuildCircleWidget(
                     number: 8,
                     color: goldenOrange,
                     percentage: calculatePercentage(
-                      _goodCounts[8]!,
-                      _missedCounts[8]!,
+                      goodCounts[8]!,
+                      missedCounts[8]!,
                     ),
                     left: 172,
                     top: 132,
@@ -296,12 +176,12 @@ class _HomePageState extends State<HomePage> {
                     number: 9,
                     color: red,
                     left: 60,
-                    top: 100,
+                    top: 75,
                     percentage: calculatePercentage(
-                      _goodCounts[9]!,
-                      _missedCounts[9]!,
+                      goodCounts[9]!,
+                      missedCounts[9]!,
                     ),
-                    onTap: () => _handleNumberTap(9, 60, 100),
+                    onTap: () => _handleNumberTap(9, 60, 75),
                   ),
                   BuildCircleWidget(
                     number: 10,
@@ -309,8 +189,8 @@ class _HomePageState extends State<HomePage> {
                     left: 60,
                     top: 7,
                     percentage: calculatePercentage(
-                      _goodCounts[10]!,
-                      _missedCounts[10]!,
+                      goodCounts[10]!,
+                      missedCounts[10]!,
                     ),
                     onTap: () => _handleNumberTap(10, 60, 7),
                   ),
@@ -320,16 +200,16 @@ class _HomePageState extends State<HomePage> {
                     left: 97,
                     top: 27,
                     percentage: calculatePercentage(
-                      _goodCounts[11]!,
-                      _missedCounts[11]!,
+                      goodCounts[11]!,
+                      missedCounts[11]!,
                     ),
                     onTap: () => _handleNumberTap(11, 97, 27),
                   ),
                   BuildCircleWidget(
                     number: 12,
                     percentage: calculatePercentage(
-                      _goodCounts[12]!,
-                      _missedCounts[12]!,
+                      goodCounts[12]!,
+                      missedCounts[12]!,
                     ),
                     color: purpleBlue,
                     left: 100,
@@ -341,8 +221,8 @@ class _HomePageState extends State<HomePage> {
                     color: warmOrange,
                     left: 170,
                     percentage: calculatePercentage(
-                      _goodCounts[13]!,
-                      _missedCounts[13]!,
+                      goodCounts[13]!,
+                      missedCounts[13]!,
                     ),
                     top: 77,
                     onTap: () => _handleNumberTap(13, 170, 77),
@@ -353,8 +233,8 @@ class _HomePageState extends State<HomePage> {
                     left: 240,
                     top: 100,
                     percentage: calculatePercentage(
-                      _goodCounts[14]!,
-                      _missedCounts[14]!,
+                      goodCounts[14]!,
+                      missedCounts[14]!,
                     ),
                     onTap: () => _handleNumberTap(14, 240, 100),
                   ),
@@ -362,8 +242,8 @@ class _HomePageState extends State<HomePage> {
                     number: 15,
                     color: greenishGrey,
                     percentage: calculatePercentage(
-                      _goodCounts[15]!,
-                      _missedCounts[15]!,
+                      goodCounts[15]!,
+                      missedCounts[15]!,
                     ),
                     left: 240,
                     top: 27,
@@ -372,15 +252,15 @@ class _HomePageState extends State<HomePage> {
                   BuildCircleWidget(
                     number: 16,
                     percentage: calculatePercentage(
-                      _goodCounts[16]!,
-                      _missedCounts[16]!,
+                      goodCounts[16]!,
+                      missedCounts[16]!,
                     ),
                     color: margintaPink,
                     left: 170,
                     top: 20,
                     onTap: () => _handleNumberTap(16, 170, 20),
                   ),
-                  if (_selectedPosition != null) ..._buildConcentricCircles(),
+                  if (selectedPosition != null) ..._buildConcentricCircles(),
                 ],
               ),
             ),
@@ -459,20 +339,18 @@ class _HomePageState extends State<HomePage> {
                         height: 20,
                         decoration: BoxDecoration(
                           color:
-                              _selectedNumber != null
-                                  ? getNumberColor(_selectedNumber!)
+                              selectedNumber != null
+                                  ? getNumberColor(selectedNumber!)
                                   : whiteColor,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             textAlign: TextAlign.center,
-                            _selectedNumber != null
-                                ? '$_selectedNumber'
-                                : 'None',
+                            selectedNumber != null ? '$selectedNumber' : 'None',
                             style: TextStyle(
                               color:
-                                  _selectedNumber != null
+                                  selectedNumber != null
                                       ? whiteColor // White text for contrast
                                       : blackColor,
                               fontSize: 13,
@@ -484,8 +362,8 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   Text(
-                    '${_selectedNumber != null ? _goodCounts[_selectedNumber] ?? 0 : 0} Good / '
-                    '${_selectedNumber != null ? _missedCounts[_selectedNumber] ?? 0 : 0} Missed',
+                    '${selectedNumber != null ? goodCounts[selectedNumber] ?? 0 : 0} Good / '
+                    '${selectedNumber != null ? missedCounts[selectedNumber] ?? 0 : 0} Missed',
                     style: TextStyle(
                       color: whiteColor,
                       fontSize: 12,
@@ -521,23 +399,127 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  //Functions
+
+  void _initSpeech() async {
+    bool available = await speech.initialize(
+      onStatus: (status) {
+        setState(() {
+          isListening = status == 'listening';
+        });
+      },
+      onError: (error) {
+        print('Error: $error');
+      },
+    );
+    if (!available) {
+      print('Speech recognition not available');
+    }
+  }
+
+  Future<void> _savePracticeResults() async {
+    final success = await firestoreService.savePracticeSession(
+      goodCounts,
+      missedCounts,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Practice session saved!' : 'Failed to save session',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (success) {
+      //Clear counts after successful save if needed
+      setState(() {
+        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+      });
+    }
+  }
+
+  void _startListening() async {
+    if (!isListening) {
+      bool available = await speech.initialize();
+      if (available) {
+        setState(() {
+          isListening = true;
+        });
+        speech.listen(
+          onResult: (result) {
+            if (result.finalResult) {
+              String recognizedText = result.recognizedWords.toLowerCase();
+              if (recognizedText.contains('good')) {
+                _incrementCounter('good');
+              } else if (recognizedText.contains('missed')) {
+                _incrementCounter('missed');
+              }
+            }
+          },
+        );
+      }
+    }
+  }
+
+  void _stopListening() {
+    if (isListening) {
+      speech.stop();
+      setState(() {
+        isListening = false;
+      });
+    }
+  }
+
+  void _incrementCounter(String type) {
+    if (selectedNumber == null) return;
+
+    setState(() {
+      if (type == 'good') {
+        goodCounts[selectedNumber!] = goodCounts[selectedNumber!]! + 1;
+      } else if (type == 'missed') {
+        missedCounts[selectedNumber!] = missedCounts[selectedNumber!]! + 1;
+      }
+      actionHistory.add({'type': type, 'number': selectedNumber!});
+      showUndo = true;
+    });
+  }
+
+  void _undoLastAction() {
+    if (actionHistory.isEmpty) return;
+
+    var lastAction = actionHistory.removeLast();
+    int number = lastAction['number'];
+    String type = lastAction['type'];
+
+    setState(() {
+      if (type == 'good' && goodCounts[number]! > 0) {
+        goodCounts[number] = goodCounts[number]! - 1;
+      } else if (type == 'missed' && missedCounts[number]! > 0) {
+        missedCounts[number] = missedCounts[number]! - 1;
+      }
+      showUndo = actionHistory.isNotEmpty;
+    });
+  }
 
   void _handleNumberTap(int number, double left, double top) {
     setState(() {
-      if (_selectedNumber == number) {
-        _selectedNumber = null;
-        _selectedPosition = null;
+      if (selectedNumber == number) {
+        selectedNumber = null;
+        selectedPosition = null;
       } else {
-        _selectedNumber = number;
-        _selectedPosition = Offset(left + 10, top + 25);
+        selectedNumber = number;
+        selectedPosition = Offset(left + 10, top + 25);
       }
     });
   }
 
   List<Widget> _buildConcentricCircles() {
     return [
-      CircleWidget(size: 40, opacity: 1.0, selectedPosition: _selectedPosition),
-      CircleWidget(size: 60, opacity: 0.6, selectedPosition: _selectedPosition),
+      CircleWidget(size: 40, opacity: 1.0, selectedPosition: selectedPosition),
+      CircleWidget(size: 60, opacity: 0.6, selectedPosition: selectedPosition),
     ];
   }
 }
