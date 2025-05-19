@@ -387,7 +387,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(width: 10),
                   FunctionsButtonWidget(
-                    onTap: () {},
+                    onTap: _deletePracticeResults,
                     color: red,
                     titleText: 'Delete practice',
                   ),
@@ -521,5 +521,25 @@ class _HomePageState extends State<HomePage> {
       CircleWidget(size: 40, opacity: 1.0, selectedPosition: selectedPosition),
       CircleWidget(size: 60, opacity: 0.6, selectedPosition: selectedPosition),
     ];
+  }
+
+  void _deletePracticeResults() {
+    setState(() {
+      // Reset all good and missed counts to 0 for each position
+      goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+      missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+      // Clear action history to prevent undoing after deletion
+      actionHistory.clear();
+      // Reset selected position indicators
+      selectedNumber = null;
+      selectedPosition = null;
+    });
+    // Show confirmation feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('All practice data cleared!'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }
