@@ -39,6 +39,8 @@ class _ScorePageState extends State<ScorePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -72,89 +74,102 @@ class _ScorePageState extends State<ScorePage> {
                   return Column(
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              height: 160,
-                              width: 280,
-                              child: Card(
-                                color: textFieldColor,
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Align(
-                                        alignment: Alignment.topRight,
-                                        child: Text(
-                                          date,
-                                          style: TextStyle(
-                                            color: whiteColor,
-                                            fontSize: 12,
+                            child: Container(
+                              width: screenWidth * 0.8,
+                              padding: const EdgeInsets.all(8.0),
+
+                              child: SizedBox(
+                                height: 160,
+                                child: Card(
+                                  color: textFieldColor,
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Align(
+                                          alignment: Alignment.topRight,
+                                          child: Text(
+                                            date,
+                                            style: TextStyle(
+                                              color: whiteColor,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    // Numbers 1-8
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: List.generate(8, (i) {
-                                          final number = i + 1;
-                                          final sessionData =
-                                              session.data()
-                                                  as Map<String, dynamic>;
-                                          final percentage =
-                                              sessionData.containsKey('$number')
-                                                  ? (sessionData['$number']['percentage']
-                                                          ?.toString() ??
-                                                      '0')
-                                                  : '0';
+                                      // Numbers 1-8
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: List.generate(8, (i) {
+                                            final number = i + 1;
+                                            final sessionData =
+                                                session.data()
+                                                    as Map<String, dynamic>;
+                                            final percentage =
+                                                sessionData.containsKey(
+                                                      '$number',
+                                                    )
+                                                    ? (sessionData['$number']['percentage']
+                                                            ?.toString() ??
+                                                        '0')
+                                                    : '0';
 
-                                          return Numberwidget(
-                                            title: "$number",
-                                            color: getNumberColor(number),
-                                            number: "$percentage%",
-                                          );
-                                        }),
+                                            return Numberwidget(
+                                              title: "$number",
+                                              color: getNumberColor(number),
+                                              number: "$percentage%",
+                                            );
+                                          }),
+                                        ),
                                       ),
-                                    ),
-                                    // Numbers 9-16
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: List.generate(8, (i) {
-                                          final number = i + 9;
-                                          final sessionData =
-                                              session.data()
-                                                  as Map<String, dynamic>;
-                                          final percentage =
-                                              sessionData.containsKey('$number')
-                                                  ? (sessionData['$number']['percentage']
-                                                          ?.toString() ??
-                                                      '0')
-                                                  : '0';
+                                      // Numbers 9-16
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: List.generate(8, (i) {
+                                            final number = i + 9;
+                                            final sessionData =
+                                                session.data()
+                                                    as Map<String, dynamic>;
+                                            final percentage =
+                                                sessionData.containsKey(
+                                                      '$number',
+                                                    )
+                                                    ? (sessionData['$number']['percentage']
+                                                            ?.toString() ??
+                                                        '0')
+                                                    : '0';
 
-                                          return Numberwidget(
-                                            title: "$number",
-                                            color: getNumberColor(number),
-                                            number: "$percentage%",
-                                          );
-                                        }),
+                                            return Numberwidget(
+                                              title: "$number",
+                                              color: getNumberColor(number),
+                                              number: "$percentage%",
+                                            );
+                                          }),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          IconButton(
-                            onPressed: () => _deleteSession(session.id),
-                            icon: Icon(Icons.delete, color: removeColor),
+                          Container(
+                            width: screenWidth * 0.1,
+                            alignment: Alignment.center,
+                            child: IconButton(
+                              onPressed: () => _deleteSession(session.id),
+                              icon: Icon(Icons.delete, color: removeColor),
+                            ),
                           ),
                         ],
                       ),
@@ -166,4 +181,3 @@ class _ScorePageState extends State<ScorePage> {
     );
   }
 }
- 
