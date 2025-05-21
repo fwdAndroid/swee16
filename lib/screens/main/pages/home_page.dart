@@ -4,7 +4,6 @@ import 'package:swee16/helper/variables.dart';
 import 'package:swee16/model/spot_model.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:swee16/widget/build_circle_widget.dart';
-import 'package:swee16/widget/circle_widget.dart';
 import 'package:swee16/widget/functions_button_widget.dart';
 import 'package:swee16/widget/good_missed_button_widget.dart';
 import 'package:swee16/widget/voice_manual_button_widget.dart';
@@ -395,13 +394,6 @@ class _HomePageState extends State<HomePage> {
         selectedPosition = Offset(scaledX, scaledY);
       }
     });
-  }
-
-  List<Widget> _buildConcentricCircles() {
-    return [
-      CircleWidget(size: 40, opacity: 1.0, selectedPosition: selectedPosition!),
-      CircleWidget(size: 60, opacity: 0.6, selectedPosition: selectedPosition!),
-    ];
   }
 
   void _deletePracticeResults() {

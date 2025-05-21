@@ -1,7 +1,6 @@
 // lib/widget/build_circle_widget.dart
 
 import 'package:flutter/material.dart';
-import 'package:swee16/utils/color_platter.dart';
 
 class BuildCircleWidget extends StatelessWidget {
   final int number;
