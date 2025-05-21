@@ -36,12 +36,12 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final List<Spot> spots = [
       Spot(number: 1, color: blueLight, x: -385, y: 7),
-      Spot(number: 2, color: lightGreen, x: -310, y: 150),
+      Spot(number: 2, color: lightGreen, x: -320, y: 150),
       Spot(number: 3, color: brightNeonGreen, x: 200, y: 185),
       Spot(number: 4, color: vivedYellow, x: 320, y: 150),
       Spot(number: 5, color: brownishOrange, x: 385, y: 7),
       Spot(number: 6, color: hotPink, x: 280, y: 5),
-      Spot(number: 7, color: oliveGreen, x: 230, y: 75),
+      Spot(number: 7, color: oliveGreen, x: 240, y: 90),
       Spot(number: 8, color: goldenOrange, x: 5, y: 153),
       Spot(number: 9, color: red, x: -260, y: 95),
       Spot(number: 10, color: goldenYellow, x: -260, y: 7),
