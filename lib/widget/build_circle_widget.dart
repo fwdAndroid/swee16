@@ -1,40 +1,36 @@
+// lib/widget/build_circle_widget.dart
+
 import 'package:flutter/material.dart';
 import 'package:swee16/utils/color_platter.dart';
 
 class BuildCircleWidget extends StatelessWidget {
   final int number;
   final Color color;
-  final double left;
-  final double top;
-  final VoidCallback? onTap;
   final int percentage;
+  final VoidCallback? onTap;
+  final bool isSelected;
 
-  BuildCircleWidget({
-    super.key,
+  const BuildCircleWidget({
+    Key? key,
     required this.number,
     required this.color,
-    required this.left,
-    required this.top,
-    required this.onTap,
     required this.percentage,
-  });
+    this.onTap,
+    this.isSelected = false, // Add this
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: GestureDetector(
-        onTap: onTap,
-        child:
-            number == 3
-                ? _buildNumberWithRightPercentage()
-                : _buildNumberWithTopPercentage(),
-      ),
+    // Only paint the circle+text, no Positioned here!
+    return GestureDetector(
+      onTap: onTap,
+      child:
+          number == 3
+              ? _buildNumberWithRightPercentage()
+              : _buildNumberWithTopPercentage(),
     );
   }
 
-  // For number 3 (percentage on the right)
   Widget _buildNumberWithRightPercentage() {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -42,11 +38,11 @@ class BuildCircleWidget extends StatelessWidget {
         _buildCircle(),
         const SizedBox(width: 4),
         Text(
-          '${percentage.toStringAsFixed(0)}%', // Add % symbol
-          style: TextStyle(
+          '${percentage.toStringAsFixed(0)}%',
+          style: const TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.bold,
-            color: whiteColor,
+            color: Colors.white,
           ),
         ),
       ],
@@ -59,10 +55,10 @@ class BuildCircleWidget extends StatelessWidget {
       children: [
         Text(
           '${percentage.toStringAsFixed(0)}%',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.bold,
-            color: whiteColor,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 2),
@@ -71,16 +67,24 @@ class BuildCircleWidget extends StatelessWidget {
     );
   }
 
-  // Reusable circle widget
   Widget _buildCircle() {
     return Container(
       width: 20,
       height: 20,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border:
+            isSelected
+                ? Border.all(color: Colors.white, width: 3)
+                : Border.all(color: Colors.transparent),
+        boxShadow:
+            isSelected ? [BoxShadow(color: Colors.white, blurRadius: 10)] : [],
+      ),
       alignment: Alignment.center,
       child: Text(
         number.toString(),
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
       ),
     );
   }

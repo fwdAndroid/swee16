@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swee16/helper/percentage_helper.dart';
 import 'package:swee16/helper/variables.dart';
+import 'package:swee16/model/spot_model.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:swee16/widget/build_circle_widget.dart';
 import 'package:swee16/widget/circle_widget.dart';
@@ -16,6 +17,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const double courtWidth = 420;
+  static const double courtHeight = 310;
+  double? selectedDx, selectedDy;
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +35,26 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Spot> spots = [
+      Spot(number: 1, color: blueLight, x: -385, y: 7),
+      Spot(number: 2, color: lightGreen, x: -310, y: 150),
+      Spot(number: 3, color: brightNeonGreen, x: 200, y: 185),
+      Spot(number: 4, color: vivedYellow, x: 320, y: 150),
+      Spot(number: 5, color: brownishOrange, x: 385, y: 7),
+      Spot(number: 6, color: hotPink, x: 280, y: 5),
+      Spot(number: 7, color: oliveGreen, x: 230, y: 75),
+      Spot(number: 8, color: goldenOrange, x: 5, y: 153),
+      Spot(number: 9, color: red, x: -260, y: 95),
+      Spot(number: 10, color: goldenYellow, x: -260, y: 7),
+      Spot(number: 11, color: lightGrey, x: -170, y: 32),
+      Spot(number: 12, color: purpleBlue, x: -170, y: 120),
+      Spot(number: 13, color: warmOrange, x: 5, y: 92),
+      Spot(number: 14, color: royalPurple, x: 170, y: 120),
+      Spot(number: 15, color: greenishGrey, x: 165, y: 30),
+      Spot(number: 16, color: margintaPink, x: 5, y: 20),
+
+      // … and so on through spot 16 …
+    ];
     return Scaffold(
       backgroundColor: blackColor,
       body: SingleChildScrollView(
@@ -78,190 +103,46 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(color: whiteColor, fontSize: 16),
                 ),
               ),
-            SizedBox(
-              height: 310,
-              child: Stack(
-                children: [
-                  Image.asset("assets/basketball.png", width: 400),
+            AspectRatio(
+              aspectRatio: 420 / 310, // match your asset’s real ratio
 
-                  BuildCircleWidget(
-                    number: 1,
-                    color: blueLight,
-                    left: 5,
-                    top: 7,
-                    percentage: calculatePercentage(
-                      goodCounts[1]!,
-                      missedCounts[1]!,
-                    ),
-                    onTap: () => _handleNumberTap(1, 5, 7),
-                  ),
-                  BuildCircleWidget(
-                    percentage: calculatePercentage(
-                      goodCounts[2]!,
-                      missedCounts[2]!,
-                    ),
-                    number: 2,
-                    color: lightGreen,
-                    left: 40,
-                    top: 150,
-                    onTap: () => _handleNumberTap(2, 40, 150),
-                  ),
-                  BuildCircleWidget(
-                    number: 3,
-                    color: brightNeonGreen,
-                    left: 170,
-                    percentage: calculatePercentage(
-                      goodCounts[3]!,
-                      missedCounts[3]!,
-                    ),
-                    top: 200,
-                    onTap: () => _handleNumberTap(3, 170, 185),
-                  ),
-                  BuildCircleWidget(
-                    number: 4,
-                    color: vivedYellow,
-                    left: 290,
-                    top: 150,
-                    percentage: calculatePercentage(
-                      goodCounts[4]!,
-                      missedCounts[4]!,
-                    ),
-                    onTap: () => _handleNumberTap(4, 290, 150),
-                  ),
-                  BuildCircleWidget(
-                    number: 5,
-                    color: brownishOrange,
-                    left: 335,
-                    top: 7,
-                    percentage: calculatePercentage(
-                      goodCounts[5]!,
-                      missedCounts[5]!,
-                    ),
-                    onTap: () => _handleNumberTap(5, 335, 7),
-                  ),
-                  BuildCircleWidget(
-                    number: 6,
-                    percentage: calculatePercentage(
-                      goodCounts[6]!,
-                      missedCounts[6]!,
-                    ),
-                    color: hotPink,
-                    left: 280,
-                    top: 5,
-                    onTap: () => _handleNumberTap(6, 280, 5),
-                  ),
-                  BuildCircleWidget(
-                    number: 7,
-                    percentage: calculatePercentage(
-                      goodCounts[7]!,
-                      missedCounts[7]!,
-                    ),
-                    color: oliveGreen,
-                    left: 280,
-                    top: 70,
-                    onTap: () => _handleNumberTap(7, 280, 70),
-                  ),
-                  BuildCircleWidget(
-                    number: 8,
-                    color: goldenOrange,
-                    percentage: calculatePercentage(
-                      goodCounts[8]!,
-                      missedCounts[8]!,
-                    ),
-                    left: 172,
-                    top: 132,
-                    onTap: () => _handleNumberTap(8, 172, 132),
-                  ),
-                  BuildCircleWidget(
-                    number: 9,
-                    color: red,
-                    left: 60,
-                    top: 75,
-                    percentage: calculatePercentage(
-                      goodCounts[9]!,
-                      missedCounts[9]!,
-                    ),
-                    onTap: () => _handleNumberTap(9, 60, 75),
-                  ),
-                  BuildCircleWidget(
-                    number: 10,
-                    color: goldenYellow,
-                    left: 60,
-                    top: 7,
-                    percentage: calculatePercentage(
-                      goodCounts[10]!,
-                      missedCounts[10]!,
-                    ),
-                    onTap: () => _handleNumberTap(10, 60, 7),
-                  ),
-                  BuildCircleWidget(
-                    number: 11,
-                    color: lightGrey,
-                    left: 97,
-                    top: 27,
-                    percentage: calculatePercentage(
-                      goodCounts[11]!,
-                      missedCounts[11]!,
-                    ),
-                    onTap: () => _handleNumberTap(11, 97, 27),
-                  ),
-                  BuildCircleWidget(
-                    number: 12,
-                    percentage: calculatePercentage(
-                      goodCounts[12]!,
-                      missedCounts[12]!,
-                    ),
-                    color: purpleBlue,
-                    left: 100,
-                    top: 104,
-                    onTap: () => _handleNumberTap(12, 100, 104),
-                  ),
-                  BuildCircleWidget(
-                    number: 13,
-                    color: warmOrange,
-                    left: 170,
-                    percentage: calculatePercentage(
-                      goodCounts[13]!,
-                      missedCounts[13]!,
-                    ),
-                    top: 77,
-                    onTap: () => _handleNumberTap(13, 170, 77),
-                  ),
-                  BuildCircleWidget(
-                    number: 14,
-                    color: royalPurple,
-                    left: 240,
-                    top: 100,
-                    percentage: calculatePercentage(
-                      goodCounts[14]!,
-                      missedCounts[14]!,
-                    ),
-                    onTap: () => _handleNumberTap(14, 240, 100),
-                  ),
-                  BuildCircleWidget(
-                    number: 15,
-                    color: greenishGrey,
-                    percentage: calculatePercentage(
-                      goodCounts[15]!,
-                      missedCounts[15]!,
-                    ),
-                    left: 240,
-                    top: 27,
-                    onTap: () => _handleNumberTap(15, 240, 27),
-                  ),
-                  BuildCircleWidget(
-                    number: 16,
-                    percentage: calculatePercentage(
-                      goodCounts[16]!,
-                      missedCounts[16]!,
-                    ),
-                    color: margintaPink,
-                    left: 170,
-                    top: 20,
-                    onTap: () => _handleNumberTap(16, 170, 20),
-                  ),
-                  if (selectedPosition != null) ..._buildConcentricCircles(),
-                ],
+              child: LayoutBuilder(
+                builder: (ctx, box) {
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/basketball.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+
+                      for (final spot in spots)
+                        Positioned.fill(
+                          left: (spot.x / courtWidth) * box.maxWidth,
+                          top: (spot.y / courtHeight) * box.maxHeight,
+                          child: BuildCircleWidget(
+                            number: spot.number,
+                            color: spot.color,
+                            percentage: calculatePercentage(
+                              goodCounts[spot.number]!,
+                              missedCounts[spot.number]!,
+                            ),
+                            isSelected:
+                                selectedNumber ==
+                                spot.number, // highlight selected
+                            onTap: () {
+                              _handleNumberTap(
+                                spot.number,
+                                (spot.x / courtWidth) * box.maxWidth,
+                                (spot.y / courtHeight) * box.maxHeight,
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
             Padding(
@@ -504,22 +385,22 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _handleNumberTap(int number, double left, double top) {
+  void _handleNumberTap(int number, double scaledX, double scaledY) {
     setState(() {
       if (selectedNumber == number) {
         selectedNumber = null;
         selectedPosition = null;
       } else {
         selectedNumber = number;
-        selectedPosition = Offset(left + 10, top + 25);
+        selectedPosition = Offset(scaledX, scaledY);
       }
     });
   }
 
   List<Widget> _buildConcentricCircles() {
     return [
-      CircleWidget(size: 40, opacity: 1.0, selectedPosition: selectedPosition),
-      CircleWidget(size: 60, opacity: 0.6, selectedPosition: selectedPosition),
+      CircleWidget(size: 40, opacity: 1.0, selectedPosition: selectedPosition!),
+      CircleWidget(size: 60, opacity: 0.6, selectedPosition: selectedPosition!),
     ];
   }
 
