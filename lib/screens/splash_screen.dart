@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:swee16/screens/auth/login_screen.dart';
 import 'package:swee16/screens/main/main_dashboard.dart';
@@ -20,24 +21,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 3)); // Simulate splash time
+    await Future.delayed(const Duration(seconds: 3)); // Splash duration
 
-    //   User? user = FirebaseAuth.instance.currentUser;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
+    User? user = FirebaseAuth.instance.currentUser;
 
-    // if (user != null) {
-    //   // User is signed in, navigate to Home Page
-
-    // } else {
-    //   // No user signed in, navigate to Login Page
-    //   Navigator.pushReplacement(
-    //     context,
-    //     MaterialPageRoute(builder: (context) => LoginScreen()),
-    //   );
-    // }
+    if (user != null) {
+      // User is logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainDashboard(),
+        ), // Replace with your actual screen
+      );
+    } else {
+      // User not logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    }
   }
 
   @override
