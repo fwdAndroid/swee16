@@ -46,4 +46,8 @@ class FirestoreService {
       return false;
     }
   }
+
+  void deleteSession(String sessionId) async {
+    await _firestore.collection('practice_sessions').doc(sessionId).delete();
+  }
 }

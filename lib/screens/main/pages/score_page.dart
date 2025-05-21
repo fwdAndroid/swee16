@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swee16/utils/color_platter.dart';
+import 'package:swee16/widget/delete_widget.dart';
 import 'package:swee16/widget/numberWidget.dart';
 
 class ScorePage extends StatefulWidget {
@@ -19,11 +21,15 @@ class _ScorePageState extends State<ScorePage> {
   void initState() {
     super.initState();
     _loadPracticeSessions();
+    _loadUserName(); // Fetch the user name
   }
+
+  String _userName = '';
 
   void _loadPracticeSessions() {
     _firestore
         .collection('practice_sessions')
+        .where("uid", isEqualTo: FirebaseAuth.instance.currentUser?.uid)
         .orderBy('timestamp', descending: true)
         .snapshots()
         .listen((snapshot) {
@@ -33,8 +39,16 @@ class _ScorePageState extends State<ScorePage> {
         });
   }
 
-  void _deleteSession(String sessionId) async {
-    await _firestore.collection('practice_sessions').doc(sessionId).delete();
+  void _loadUserName() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          _userName = userDoc.data()?['fullName'] ?? '';
+        });
+      }
+    }
   }
 
   @override
@@ -46,7 +60,10 @@ class _ScorePageState extends State<ScorePage> {
       appBar: AppBar(
         backgroundColor: blackColor,
         automaticallyImplyLeading: false,
-        title: Text("Fawad Kaleem", style: TextStyle(color: whiteColor)),
+        title: Text(
+          _userName.isEmpty ? "Loading..." : _userName,
+          style: TextStyle(color: whiteColor),
+        ),
       ),
       body:
           _practiceSessions.isEmpty
@@ -167,7 +184,18 @@ class _ScorePageState extends State<ScorePage> {
                             width: screenWidth * 0.1,
                             alignment: Alignment.center,
                             child: IconButton(
-                              onPressed: () => _deleteSession(session.id),
+                              onPressed: () {
+                                showDialog<void>(
+                                  context: context,
+                                  barrierDismissible:
+                                      false, // user must tap button!
+                                  builder: (BuildContext context) {
+                                    return DeleteWidget(
+                                      sessionId: session['session_id'],
+                                    );
+                                  },
+                                );
+                              },
                               icon: Icon(Icons.delete, color: removeColor),
                             ),
                           ),
