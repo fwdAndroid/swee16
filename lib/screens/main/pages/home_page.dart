@@ -300,30 +300,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _savePracticeResults() async {
-    final success = await firestoreService.savePracticeSession(
-      goodCounts,
-      missedCounts,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Practice session saved!' : 'Failed to save session',
-        ),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
-
-    if (success) {
-      //Clear counts after successful save if needed
-      setState(() {
-        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-      });
-    }
-  }
-
   void _startListening() async {
     if (!isVoiceMode) return; // Only listen in voice mode
 
@@ -415,7 +391,80 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  void _deletePracticeResults() {
+  Future<void> _savePracticeResults() async {
+    // Show confirmation dialog
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Save Practice'),
+          content: Text('Are you sure you want to save this practice session?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel', style: TextStyle(color: red)),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text('Save', style: TextStyle(color: mainColor)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return; // User canceled
+
+    final success = await firestoreService.savePracticeSession(
+      goodCounts,
+      missedCounts,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Practice session saved!' : 'Failed to save session',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (success) {
+      // Clear counts after successful save if needed
+      setState(() {
+        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        actionHistory.clear();
+      });
+    }
+  }
+
+  void _deletePracticeResults() async {
+    // Show confirmation dialog
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Practice Data'),
+          content: Text(
+            'Are you sure you want to delete all practice data? This cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel', style: TextStyle(color: mainColor)),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text('Delete', style: TextStyle(color: red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return; // User canceled
+
     setState(() {
       // Reset all good and missed counts to 0 for each position
       goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
@@ -426,6 +475,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       selectedNumber = null;
       selectedPosition = null;
     });
+
     // Show confirmation feedback
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
