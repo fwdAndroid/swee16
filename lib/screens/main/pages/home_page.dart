@@ -15,45 +15,38 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const double courtWidth = 420;
   static const double courtHeight = 310;
   double? selectedDx, selectedDy;
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (isVoiceMode) {
+      if (state == AppLifecycleState.paused) {
+        _stopListening();
+      } else if (state == AppLifecycleState.resumed && !isListening) {
+        _startListening();
+      }
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initSpeech();
   }
 
   @override
   void dispose() {
-    speech.stop();
+    WidgetsBinding.instance.removeObserver(this);
+    _stopListening();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Spot> spots = [
-      Spot(number: 1, color: blueLight, x: -385, y: 7),
-      Spot(number: 2, color: lightGreen, x: -320, y: 150),
-      Spot(number: 3, color: brightNeonGreen, x: 200, y: 185),
-      Spot(number: 4, color: vivedYellow, x: 320, y: 150),
-      Spot(number: 5, color: brownishOrange, x: 385, y: 7),
-      Spot(number: 6, color: hotPink, x: 280, y: 5),
-      Spot(number: 7, color: oliveGreen, x: 240, y: 90),
-      Spot(number: 8, color: goldenOrange, x: 5, y: 153),
-      Spot(number: 9, color: red, x: -260, y: 95),
-      Spot(number: 10, color: goldenYellow, x: -260, y: 7),
-      Spot(number: 11, color: lightGrey, x: -170, y: 32),
-      Spot(number: 12, color: purpleBlue, x: -170, y: 120),
-      Spot(number: 13, color: warmOrange, x: 5, y: 92),
-      Spot(number: 14, color: royalPurple, x: 170, y: 120),
-      Spot(number: 15, color: greenishGrey, x: 165, y: 30),
-      Spot(number: 16, color: margintaPink, x: 5, y: 20),
-
-      // … and so on through spot 16 …
-    ];
     return Scaffold(
       backgroundColor: blackColor,
       body: SingleChildScrollView(
@@ -70,7 +63,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       setState(() {
                         isVoiceMode = false;
-                        _stopListening();
+                        _stopListening(); // Stop when switching to manual
                       });
                     },
                     color: !isVoiceMode ? mainColor : labelColor,
@@ -83,7 +76,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       setState(() {
                         isVoiceMode = true;
-                        _startListening();
+                        _startListening(); // Always start when switching to voice
                       });
                     },
                     color: isVoiceMode ? mainColor : labelColor,
@@ -95,11 +88,21 @@ class _HomePageState extends State<HomePage> {
             if (isVoiceMode)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  isListening
-                      ? 'Listening... Say "Good" or "Missed"'
-                      : 'Tap Voice button to start',
-                  style: TextStyle(color: whiteColor, fontSize: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isListening ? Icons.mic : Icons.mic_off,
+                      color: isListening ? Colors.green : Colors.red,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      isListening
+                          ? 'Listening... Say "Good" or "Missed"'
+                          : 'Press Voice button to start',
+                      style: TextStyle(color: whiteColor, fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
             AspectRatio(
@@ -322,48 +325,64 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startListening() async {
-    if (!isListening) {
-      bool available = await speech.initialize();
-      if (available) {
-        setState(() {
-          isListening = true;
-        });
-        speech.listen(
-          onResult: (result) {
-            if (result.finalResult) {
-              String recognizedText = result.recognizedWords.toLowerCase();
-              if (recognizedText.contains('good')) {
-                _incrementCounter('good');
-              } else if (recognizedText.contains('missed')) {
-                _incrementCounter('missed');
-              }
+    if (!isVoiceMode) return; // Only listen in voice mode
+
+    bool available = await speech.initialize();
+    if (available) {
+      setState(() => isListening = true);
+      speech.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            String recognizedText = result.recognizedWords.toLowerCase();
+            print("Heard: $recognizedText"); // Debug log
+
+            // Check for "good" or "missed" commands
+            if (recognizedText.contains('good')) {
+              _incrementCounter('good');
+            } else if (recognizedText.contains('miss') ||
+                recognizedText.contains('mist') || // Common mishearing
+                recognizedText.contains('this') // Sometimes misheard
+                ) {
+              _incrementCounter('missed');
             }
-          },
-        );
-      }
+
+            // Restart listening if still in voice mode
+            if (isVoiceMode) {
+              Future.delayed(Duration(milliseconds: 500), () {
+                _startListening(); // Small delay before restarting
+              });
+            }
+          }
+        },
+        listenFor: Duration(seconds: 10),
+        cancelOnError: true,
+        partialResults: false,
+      );
     }
   }
 
+  // Modify the _stopListening function
   void _stopListening() {
     if (isListening) {
       speech.stop();
-      setState(() {
-        isListening = false;
-      });
+      setState(() => isListening = false);
     }
   }
 
   void _incrementCounter(String type) {
-    if (selectedNumber == null) return;
+    if (selectedNumber == null) {
+      // Optional: Auto-select a default spot if none selected
+      setState(() => selectedNumber = 1); // Example: Default to spot 1
+    }
 
     setState(() {
       if (type == 'good') {
-        goodCounts[selectedNumber!] = goodCounts[selectedNumber!]! + 1;
-      } else if (type == 'missed') {
-        missedCounts[selectedNumber!] = missedCounts[selectedNumber!]! + 1;
+        goodCounts[selectedNumber!] = (goodCounts[selectedNumber!] ?? 0) + 1;
+      } else if (type == 'missed' || type == 'miss' || type == 'this') {
+        missedCounts[selectedNumber!] =
+            (missedCounts[selectedNumber!] ?? 0) + 1;
       }
       actionHistory.add({'type': type, 'number': selectedNumber!});
-      showUndo = true;
     });
   }
 

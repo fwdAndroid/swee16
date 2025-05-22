@@ -10,6 +10,7 @@ List<Map<String, dynamic>> actionHistory = [];
 bool showUndo = false;
 int? selectedNumber;
 Offset? selectedPosition;
+// Ensure they’re not null
 Map<int, int> goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
 Map<int, int> missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
 
