@@ -1,5 +1,3 @@
-// lib/widget/build_circle_widget.dart
-
 import 'package:flutter/material.dart';
 
 class BuildCircleWidget extends StatelessWidget {
@@ -15,12 +13,13 @@ class BuildCircleWidget extends StatelessWidget {
     required this.color,
     required this.percentage,
     this.onTap,
-    this.isSelected = false, // Add this
+    this.isSelected = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Only paint the circle+text, no Positioned here!
+    // The Positioned widget is now handled in HomePage's Stack.
+    // This widget simply paints the circle and text.
     return GestureDetector(
       onTap: onTap,
       child:

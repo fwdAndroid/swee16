@@ -1,11 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:battery_plus/battery_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:swee16/helper/percentage_helper.dart';
-import 'package:swee16/helper/variables.dart';
 import 'package:swee16/model/spot_model.dart';
+import 'package:swee16/provider/practice_provider.dart';
+import 'package:swee16/provider/speech_provider.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:swee16/widget/build_circle_widget.dart';
 import 'package:swee16/widget/functions_button_widget.dart';
@@ -23,61 +21,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const double courtWidth = 420;
   static const double courtHeight = 310;
   double? selectedDx, selectedDy;
-  Timer? _voiceDebounce;
-  final Battery _battery = Battery();
-  int? _batteryLevel;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (isVoiceMode) {
-      if (state == AppLifecycleState.paused) {
-        _stopListening();
-      } else if (state == AppLifecycleState.resumed && !isListening) {
-        _startListening();
-      }
-    }
-  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initSpeech();
-    _checkBatteryLevel();
-    // Periodic battery check every 5 minutes
-    Timer.periodic(const Duration(minutes: 5), (timer) => _checkBatteryLevel());
   }
 
   @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _voiceDebounce?.cancel();
-    _stopListening();
-    super.dispose();
-  }
-
-  Future<void> _checkBatteryLevel() async {
-    final batteryLevel = await _battery.batteryLevel;
-    setState(() => _batteryLevel = batteryLevel);
-
-    if (batteryLevel < 20 && isVoiceMode) {
-      setState(() {
-        isVoiceMode = false;
-        _stopListening();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Voice mode disabled - low battery ($batteryLevel%)'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+    // This logic ensures voice mode is managed across app lifecycle
+    if (speechProvider.isVoiceMode) {
+      if (state == AppLifecycleState.paused) {
+        speechProvider.stopListening();
+      } else if (state == AppLifecycleState.resumed) {
+        // Only start if not already listening to avoid redundant calls
+        if (!speechProvider.isListening) {
+          speechProvider.startListening(context: context);
+        }
       }
     }
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final speechProvider = Provider.of<SpeechProvider>(context);
+    final practiceProvider = Provider.of<PracticeProvider>(context);
+
     return Scaffold(
       backgroundColor: blackColor,
       body: SingleChildScrollView(
@@ -94,39 +71,52 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       VoiceManualWidget(
                         styleColor: blackColor,
                         onTap: () {
-                          setState(() {
-                            isVoiceMode = !isVoiceMode;
-                            if (isVoiceMode) {
-                              _startListening();
-                            } else {
-                              _stopListening();
-                            }
-                          });
+                          // Prevent enabling voice mode if battery is low
+                          if (practiceProvider.batteryLevel != null &&
+                              practiceProvider.batteryLevel! < 20) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Voice mode disabled - low battery (${practiceProvider.batteryLevel}%)',
+                                ),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          speechProvider.toggleVoiceMode(context: context);
                         },
-                        color: isVoiceMode ? mainColor : labelColor,
-                        titleText: isVoiceMode ? 'Listening...' : 'Voice',
+                        color:
+                            speechProvider.isVoiceMode ? mainColor : labelColor,
+                        titleText:
+                            speechProvider.isVoiceMode
+                                ? 'Listening...'
+                                : 'Voice',
                       ),
                       const SizedBox(width: 10),
                       VoiceManualWidget(
                         styleColor: blackColor,
                         onTap: () {
-                          setState(() {
-                            isVoiceMode = false;
-                            _stopListening();
-                          });
+                          speechProvider.setManualMode();
                         },
-                        color: !isVoiceMode ? mainColor : labelColor,
+                        color:
+                            !speechProvider.isVoiceMode
+                                ? mainColor
+                                : labelColor,
                         titleText: 'Manual',
                       ),
                     ],
                   ),
-                  if (_batteryLevel != null)
+                  if (practiceProvider.batteryLevel != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
-                        'Battery: $_batteryLevel%',
+                        'Battery: ${practiceProvider.batteryLevel}%',
                         style: TextStyle(
-                          color: _batteryLevel! < 20 ? Colors.red : whiteColor,
+                          color:
+                              practiceProvider.batteryLevel! < 20
+                                  ? Colors.red
+                                  : whiteColor,
                           fontSize: 14,
                         ),
                       ),
@@ -134,19 +124,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            if (isVoiceMode)
+            if (speechProvider.isVoiceMode)
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isListening ? Icons.mic : Icons.mic_off,
-                      color: isListening ? Colors.green : Colors.red,
+                      speechProvider.isListening ? Icons.mic : Icons.mic_off,
+                      color:
+                          speechProvider.isListening
+                              ? Colors.green
+                              : Colors.red,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isListening
+                      speechProvider.isListening
                           ? 'Listening... Say "Good" or "Missed"'
                           : 'Press Voice button to start',
                       style: TextStyle(color: whiteColor, fontSize: 16),
@@ -156,6 +149,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             AspectRatio(
               aspectRatio: 420 / 310,
+
               child: LayoutBuilder(
                 builder: (ctx, box) {
                   return Stack(
@@ -169,17 +163,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       for (final spot in spots)
                         Positioned.fill(
                           left: (spot.x / courtWidth) * box.maxWidth,
+
                           top: (spot.y / courtHeight) * box.maxHeight,
+
                           child: BuildCircleWidget(
                             number: spot.number,
+
                             color: spot.color,
+
                             percentage: calculatePercentage(
-                              goodCounts[spot.number]!,
-                              missedCounts[spot.number]!,
+                              practiceProvider.goodCounts[spot.number]!,
+                              practiceProvider.missedCounts[spot.number]!,
                             ),
-                            isSelected: selectedNumber == spot.number,
+
+                            isSelected:
+                                practiceProvider.selectedNumber == spot.number,
+
                             onTap: () {
-                              _handleNumberTap(
+                              practiceProvider.handleNumberTap(
                                 spot.number,
                                 (spot.x / courtWidth) * box.maxWidth,
                                 (spot.y / courtHeight) * box.maxHeight,
@@ -187,11 +188,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             },
                           ),
                         ),
+                      // for (final spot in spots)
+                      //   Positioned(
+                      //     // Use Positioned directly here, not Positioned.fill inside BuildCircleWidget
+                      //     left: (spot.x / courtWidth) * box.maxWidth,
+                      //     top: (spot.y / courtHeight) * box.maxHeight,
+                      //     child: BuildCircleWidget(
+                      //       number: spot.number,
+                      //       color: spot.color,
+
+                      //       },
+                      //     ),
+                      //   ),
                     ],
                   );
                 },
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
@@ -200,126 +214,196 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       GoodMissedButtonWidget(
-                        onTap:
-                            () =>
-                                !isVoiceMode ? _incrementCounter('good') : null,
+                        onTap: () {
+                          if (!speechProvider.isVoiceMode) {
+                            practiceProvider.incrementCounter('good');
+                          }
+                        },
                         color: mainColor,
                         titleText: 'Good',
-                        subtitleText: totalGood.toString(),
+                        subtitleText: practiceProvider.totalGood.toString(),
                       ),
                       const SizedBox(width: 10),
                       GoodMissedButtonWidget(
-                        onTap:
-                            () =>
-                                !isVoiceMode
-                                    ? _incrementCounter('missed')
-                                    : null,
+                        onTap: () {
+                          if (!speechProvider.isVoiceMode) {
+                            practiceProvider.incrementCounter('missed');
+                          }
+                        },
                         color: red,
                         titleText: 'Missed',
-                        subtitleText: totalMissed.toString(),
+                        subtitleText: practiceProvider.totalMissed.toString(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
                   Center(
                     child: TextButton(
-                      onPressed: _undoLastAction,
+                      onPressed: practiceProvider.undoLastAction,
                       child: Text(
                         "Undo Actions",
                         style: TextStyle(color: whiteColor),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Over All Percentage: ',
-                    style: TextStyle(color: whiteColor, fontSize: 16),
-                  ),
-                  Text(
-                    '${calculatePercentage(totalGood, totalMissed)}%',
-                    style: TextStyle(color: whiteColor, fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0, right: 8, bottom: 9),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        "Individual Shot: ",
-                        style: TextStyle(color: whiteColor, fontSize: 16),
-                      ),
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color:
-                              selectedNumber != null
-                                  ? getNumberColor(selectedNumber!)
-                                  : whiteColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            textAlign: TextAlign.center,
-                            selectedNumber != null ? '$selectedNumber' : 'None',
-                            style: TextStyle(
-                              color:
-                                  selectedNumber != null
-                                      ? whiteColor
-                                      : blackColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${selectedNumber != null ? goodCounts[selectedNumber] ?? 0 : 0} Good / '
-                    '${selectedNumber != null ? missedCounts[selectedNumber] ?? 0 : 0} Missed',
-                    style: TextStyle(
-                      color: whiteColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 8.0,
+                      right: 8,
+                      bottom: 9,
                     ),
-                    textAlign: TextAlign.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              "Individual Shot: ",
+                              style: TextStyle(color: whiteColor, fontSize: 16),
+                            ),
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color:
+                                    practiceProvider.selectedNumber != null
+                                        ? getNumberColor(
+                                          practiceProvider.selectedNumber!,
+                                        )
+                                        : whiteColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  textAlign: TextAlign.center,
+                                  practiceProvider.selectedNumber != null
+                                      ? '${practiceProvider.selectedNumber}'
+                                      : 'None',
+                                  style: TextStyle(
+                                    color:
+                                        practiceProvider.selectedNumber != null
+                                            ? whiteColor
+                                            : blackColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${practiceProvider.selectedNumber != null ? practiceProvider.goodCounts[practiceProvider.selectedNumber!] ?? 0 : 0} Good / '
+                          '${practiceProvider.selectedNumber != null ? practiceProvider.missedCounts[practiceProvider.selectedNumber!] ?? 0 : 0} Missed',
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FunctionsButtonWidget(
-                        onTap: _savePracticeResults,
-                        color: mainColor,
-                        titleText: 'Save Practice',
-                      ),
-                      const SizedBox(width: 10),
-                      FunctionsButtonWidget(
-                        onTap: _deletePracticeResults,
-                        color: red,
-                        titleText: 'Delete practice',
-                      ),
-                    ],
+
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FunctionsButtonWidget(
+                              onTap: () async {
+                                bool? confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text('Save Practice'),
+                                      content: const Text(
+                                        'Are you sure you want to save this practice session?',
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: Text(
+                                            'Cancel',
+                                            style: TextStyle(color: red),
+                                          ),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                        ),
+                                        TextButton(
+                                          child: Text(
+                                            'Save',
+                                            style: TextStyle(color: mainColor),
+                                          ),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                if (confirm == true) {
+                                  practiceProvider.savePracticeResults(context);
+                                }
+                              },
+                              color: mainColor,
+                              titleText: 'Save Practice',
+                            ),
+                            const SizedBox(width: 10),
+                            FunctionsButtonWidget(
+                              onTap: () async {
+                                bool? confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text('Delete Practice Data'),
+                                      content: const Text(
+                                        'Are you sure you want to delete all practice data? This cannot be undone.',
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: Text(
+                                            'Cancel',
+                                            style: TextStyle(color: mainColor),
+                                          ),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                        ),
+                                        TextButton(
+                                          child: Text(
+                                            'Delete',
+                                            style: TextStyle(color: red),
+                                          ),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                if (confirm == true) {
+                                  practiceProvider.deletePracticeResults(
+                                    context,
+                                  );
+                                }
+                              },
+                              color: red,
+                              titleText: 'Delete practice',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -328,222 +412,5 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
-
-  void _initSpeech() async {
-    bool available = await speech.initialize(
-      onStatus: (status) {
-        if (mounted) {
-          setState(() {
-            isListening = status == 'listening';
-          });
-        }
-      },
-      onError: (error) {
-        print('Error: $error');
-      },
-    );
-    if (!available) {
-      print('Speech recognition not available');
-    }
-  }
-
-  void _startListening() async {
-    if (!isVoiceMode || !mounted) return;
-
-    if (!speech.isAvailable) {
-      bool available = await speech.initialize();
-      if (!available) return;
-    }
-
-    if (mounted) {
-      setState(() => isListening = true);
-    }
-
-    speech.listen(
-      onResult: (result) {
-        if (result.finalResult) {
-          String recognizedText = result.recognizedWords.toLowerCase();
-          _processVoiceCommand(recognizedText);
-
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (isVoiceMode && mounted) {
-              _startListening();
-            }
-          });
-        }
-      },
-      listenFor: const Duration(seconds: 3),
-      cancelOnError: true,
-      partialResults: false,
-      listenMode: ListenMode.confirmation,
-    );
-  }
-
-  void _processVoiceCommand(String text) {
-    _voiceDebounce?.cancel();
-
-    _voiceDebounce = Timer(const Duration(milliseconds: 500), () {
-      if (text.contains('good')) {
-        _incrementCounter('good');
-      } else if (text.contains('miss') || text.contains('mist')) {
-        _incrementCounter('missed');
-      }
-    });
-  }
-
-  void _stopListening() {
-    if (isListening) {
-      speech.stop();
-      if (mounted) {
-        setState(() => isListening = false);
-      }
-    }
-  }
-
-  void _incrementCounter(String type) {
-    if (selectedNumber == null) {
-      if (mounted) {
-        setState(() => selectedNumber = 1);
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        if (type == 'good') {
-          goodCounts[selectedNumber!] = (goodCounts[selectedNumber!] ?? 0) + 1;
-        } else if (type == 'missed') {
-          missedCounts[selectedNumber!] =
-              (missedCounts[selectedNumber!] ?? 0) + 1;
-        }
-        actionHistory.add({'type': type, 'number': selectedNumber!});
-      });
-    }
-  }
-
-  void _undoLastAction() {
-    if (actionHistory.isEmpty) return;
-
-    var lastAction = actionHistory.removeLast();
-    int number = lastAction['number'];
-    String type = lastAction['type'];
-
-    if (mounted) {
-      setState(() {
-        if (type == 'good' && goodCounts[number]! > 0) {
-          goodCounts[number] = goodCounts[number]! - 1;
-        } else if (type == 'missed' && missedCounts[number]! > 0) {
-          missedCounts[number] = missedCounts[number]! - 1;
-        }
-        showUndo = actionHistory.isNotEmpty;
-      });
-    }
-  }
-
-  void _handleNumberTap(int number, double scaledX, double scaledY) {
-    if (mounted) {
-      setState(() {
-        if (selectedNumber == number) {
-          selectedNumber = null;
-          selectedPosition = null;
-        } else {
-          selectedNumber = number;
-          selectedPosition = Offset(scaledX, scaledY);
-        }
-      });
-    }
-  }
-
-  Future<void> _savePracticeResults() async {
-    bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Save Practice'),
-          content: const Text(
-            'Are you sure you want to save this practice session?',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel', style: TextStyle(color: red)),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            TextButton(
-              child: Text('Save', style: TextStyle(color: mainColor)),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm != true) return;
-
-    final success = await firestoreService.savePracticeSession(
-      goodCounts,
-      missedCounts,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success ? 'Practice session saved!' : 'Failed to save session',
-          ),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
-
-      if (success) {
-        setState(() {
-          goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-          missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-          actionHistory.clear();
-        });
-      }
-    }
-  }
-
-  void _deletePracticeResults() async {
-    bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Practice Data'),
-          content: const Text(
-            'Are you sure you want to delete all practice data? This cannot be undone.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel', style: TextStyle(color: mainColor)),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            TextButton(
-              child: Text('Delete', style: TextStyle(color: red)),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm != true) return;
-
-    if (mounted) {
-      setState(() {
-        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        actionHistory.clear();
-        selectedNumber = null;
-        selectedPosition = null;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('All practice data cleared!'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

@@ -16,7 +16,7 @@ class Spot {
 final List<Spot> spots = [
   Spot(number: 1, color: blueLight, x: -385, y: 7),
   Spot(number: 2, color: lightGreen, x: -320, y: 150),
-  Spot(number: 3, color: brightNeonGreen, x: 200, y: 185),
+  Spot(number: 3, color: brightNeonGreen, x: 300, y: 185),
   Spot(number: 4, color: vivedYellow, x: 320, y: 150),
   Spot(number: 5, color: brownishOrange, x: 385, y: 7),
   Spot(number: 6, color: hotPink, x: 280, y: 5),
