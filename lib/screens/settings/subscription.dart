@@ -39,7 +39,7 @@ class _SubscriptionState extends State<Subscription> {
               child: ListTile(
                 leading: Icon(Icons.monetization_on, color: whiteColor),
                 title: Text(
-                  "2 \$",
+                  "\$2.99",
                   style: GoogleFonts.poppins(color: whiteColor),
                 ),
                 subtitle: Text(
@@ -55,7 +55,7 @@ class _SubscriptionState extends State<Subscription> {
               child: ListTile(
                 leading: Icon(Icons.monetization_on, color: whiteColor),
                 title: Text(
-                  "29 \$",
+                  "\$39.99",
                   style: GoogleFonts.poppins(color: whiteColor),
                 ),
                 subtitle: Text(

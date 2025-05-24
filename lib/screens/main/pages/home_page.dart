@@ -107,20 +107,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ],
                   ),
-                  if (practiceProvider.batteryLevel != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        'Battery: ${practiceProvider.batteryLevel}%',
-                        style: TextStyle(
-                          color:
-                              practiceProvider.batteryLevel! < 20
-                                  ? Colors.red
-                                  : whiteColor,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -188,18 +174,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             },
                           ),
                         ),
-                      // for (final spot in spots)
-                      //   Positioned(
-                      //     // Use Positioned directly here, not Positioned.fill inside BuildCircleWidget
-                      //     left: (spot.x / courtWidth) * box.maxWidth,
-                      //     top: (spot.y / courtHeight) * box.maxHeight,
-                      //     child: BuildCircleWidget(
-                      //       number: spot.number,
-                      //       color: spot.color,
-
-                      //       },
-                      //     ),
-                      //   ),
                     ],
                   );
                 },
@@ -304,7 +278,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-
+                  Text(
+                    'Overall Percentage: ${calculateOverallPercentage(practiceProvider.totalGood, practiceProvider.totalMissed)}',
+                    style: TextStyle(
+                      color: whiteColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
