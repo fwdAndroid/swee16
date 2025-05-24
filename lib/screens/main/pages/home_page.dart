@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:battery_plus/battery_plus.dart';
 import 'package:swee16/helper/percentage_helper.dart';
 import 'package:swee16/helper/variables.dart';
 import 'package:swee16/model/spot_model.dart';
@@ -19,6 +23,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const double courtWidth = 420;
   static const double courtHeight = 310;
   double? selectedDx, selectedDy;
+  Timer? _voiceDebounce;
+  final Battery _battery = Battery();
+  int? _batteryLevel;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -36,13 +43,37 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initSpeech();
+    _checkBatteryLevel();
+    // Periodic battery check every 5 minutes
+    Timer.periodic(const Duration(minutes: 5), (timer) => _checkBatteryLevel());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _voiceDebounce?.cancel();
     _stopListening();
     super.dispose();
+  }
+
+  Future<void> _checkBatteryLevel() async {
+    final batteryLevel = await _battery.batteryLevel;
+    setState(() => _batteryLevel = batteryLevel);
+
+    if (batteryLevel < 20 && isVoiceMode) {
+      setState(() {
+        isVoiceMode = false;
+        _stopListening();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Voice mode disabled - low battery ($batteryLevel%)'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -55,33 +86,51 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             const SizedBox(height: 50),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  VoiceManualWidget(
-                    styleColor: blackColor,
-                    onTap: () {
-                      setState(() {
-                        isVoiceMode = false;
-                        _stopListening(); // Stop when switching to manual
-                      });
-                    },
-                    color: !isVoiceMode ? mainColor : labelColor,
-                    titleText: 'Manually',
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      VoiceManualWidget(
+                        styleColor: blackColor,
+                        onTap: () {
+                          setState(() {
+                            isVoiceMode = !isVoiceMode;
+                            if (isVoiceMode) {
+                              _startListening();
+                            } else {
+                              _stopListening();
+                            }
+                          });
+                        },
+                        color: isVoiceMode ? mainColor : labelColor,
+                        titleText: isVoiceMode ? 'Listening...' : 'Voice',
+                      ),
+                      const SizedBox(width: 10),
+                      VoiceManualWidget(
+                        styleColor: blackColor,
+                        onTap: () {
+                          setState(() {
+                            isVoiceMode = false;
+                            _stopListening();
+                          });
+                        },
+                        color: !isVoiceMode ? mainColor : labelColor,
+                        titleText: 'Manual',
+                      ),
+                    ],
                   ),
-
-                  const SizedBox(width: 10),
-                  VoiceManualWidget(
-                    styleColor: blackColor,
-                    onTap: () {
-                      setState(() {
-                        isVoiceMode = true;
-                        _startListening(); // Always start when switching to voice
-                      });
-                    },
-                    color: isVoiceMode ? mainColor : labelColor,
-                    titleText: 'Voice',
-                  ),
+                  if (_batteryLevel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Battery: $_batteryLevel%',
+                        style: TextStyle(
+                          color: _batteryLevel! < 20 ? Colors.red : whiteColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -95,7 +144,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       isListening ? Icons.mic : Icons.mic_off,
                       color: isListening ? Colors.green : Colors.red,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       isListening
                           ? 'Listening... Say "Good" or "Missed"'
@@ -106,8 +155,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
             AspectRatio(
-              aspectRatio: 420 / 310, // match your asset’s real ratio
-
+              aspectRatio: 420 / 310,
               child: LayoutBuilder(
                 builder: (ctx, box) {
                   return Stack(
@@ -118,7 +166,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           fit: BoxFit.cover,
                         ),
                       ),
-
                       for (final spot in spots)
                         Positioned.fill(
                           left: (spot.x / courtWidth) * box.maxWidth,
@@ -130,9 +177,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               goodCounts[spot.number]!,
                               missedCounts[spot.number]!,
                             ),
-                            isSelected:
-                                selectedNumber ==
-                                spot.number, // highlight selected
+                            isSelected: selectedNumber == spot.number,
                             onTap: () {
                               _handleNumberTap(
                                 spot.number,
@@ -188,7 +233,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -205,7 +249,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(left: 8.0, right: 8, bottom: 9),
               child: Row(
@@ -234,7 +277,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             style: TextStyle(
                               color:
                                   selectedNumber != null
-                                      ? whiteColor // White text for contrast
+                                      ? whiteColor
                                       : blackColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -259,20 +302,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  FunctionsButtonWidget(
-                    onTap: _savePracticeResults,
-                    color: mainColor,
-                    titleText: 'Save Practice',
-                  ),
-
-                  const SizedBox(width: 10),
-                  FunctionsButtonWidget(
-                    onTap: _deletePracticeResults,
-                    color: red,
-                    titleText: 'Delete practice',
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FunctionsButtonWidget(
+                        onTap: _savePracticeResults,
+                        color: mainColor,
+                        titleText: 'Save Practice',
+                      ),
+                      const SizedBox(width: 10),
+                      FunctionsButtonWidget(
+                        onTap: _deletePracticeResults,
+                        color: red,
+                        titleText: 'Delete practice',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -282,14 +329,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
   }
-  //Functions
 
   void _initSpeech() async {
     bool available = await speech.initialize(
       onStatus: (status) {
-        setState(() {
-          isListening = status == 'listening';
-        });
+        if (mounted) {
+          setState(() {
+            isListening = status == 'listening';
+          });
+        }
       },
       onError: (error) {
         print('Error: $error');
@@ -301,65 +349,76 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _startListening() async {
-    if (!isVoiceMode) return; // Only listen in voice mode
+    if (!isVoiceMode || !mounted) return;
 
-    bool available = await speech.initialize();
-    if (available) {
-      setState(() => isListening = true);
-      speech.listen(
-        onResult: (result) {
-          if (result.finalResult) {
-            String recognizedText = result.recognizedWords.toLowerCase();
-            print("Heard: $recognizedText"); // Debug log
-
-            // Check for "good" or "missed" commands
-            if (recognizedText.contains('good')) {
-              _incrementCounter('good');
-            } else if (recognizedText.contains('miss') ||
-                recognizedText.contains('mist') || // Common mishearing
-                recognizedText.contains('this') // Sometimes misheard
-                ) {
-              _incrementCounter('missed');
-            }
-
-            // Restart listening if still in voice mode
-            if (isVoiceMode) {
-              Future.delayed(Duration(milliseconds: 500), () {
-                _startListening(); // Small delay before restarting
-              });
-            }
-          }
-        },
-        listenFor: Duration(seconds: 10),
-        cancelOnError: true,
-        partialResults: false,
-      );
+    if (!speech.isAvailable) {
+      bool available = await speech.initialize();
+      if (!available) return;
     }
+
+    if (mounted) {
+      setState(() => isListening = true);
+    }
+
+    speech.listen(
+      onResult: (result) {
+        if (result.finalResult) {
+          String recognizedText = result.recognizedWords.toLowerCase();
+          _processVoiceCommand(recognizedText);
+
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (isVoiceMode && mounted) {
+              _startListening();
+            }
+          });
+        }
+      },
+      listenFor: const Duration(seconds: 3),
+      cancelOnError: true,
+      partialResults: false,
+      listenMode: ListenMode.confirmation,
+    );
   }
 
-  // Modify the _stopListening function
+  void _processVoiceCommand(String text) {
+    _voiceDebounce?.cancel();
+
+    _voiceDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (text.contains('good')) {
+        _incrementCounter('good');
+      } else if (text.contains('miss') || text.contains('mist')) {
+        _incrementCounter('missed');
+      }
+    });
+  }
+
   void _stopListening() {
     if (isListening) {
       speech.stop();
-      setState(() => isListening = false);
+      if (mounted) {
+        setState(() => isListening = false);
+      }
     }
   }
 
   void _incrementCounter(String type) {
     if (selectedNumber == null) {
-      // Optional: Auto-select a default spot if none selected
-      setState(() => selectedNumber = 1); // Example: Default to spot 1
+      if (mounted) {
+        setState(() => selectedNumber = 1);
+      }
     }
 
-    setState(() {
-      if (type == 'good') {
-        goodCounts[selectedNumber!] = (goodCounts[selectedNumber!] ?? 0) + 1;
-      } else if (type == 'missed' || type == 'miss' || type == 'this') {
-        missedCounts[selectedNumber!] =
-            (missedCounts[selectedNumber!] ?? 0) + 1;
-      }
-      actionHistory.add({'type': type, 'number': selectedNumber!});
-    });
+    if (mounted) {
+      setState(() {
+        if (type == 'good') {
+          goodCounts[selectedNumber!] = (goodCounts[selectedNumber!] ?? 0) + 1;
+        } else if (type == 'missed') {
+          missedCounts[selectedNumber!] =
+              (missedCounts[selectedNumber!] ?? 0) + 1;
+        }
+        actionHistory.add({'type': type, 'number': selectedNumber!});
+      });
+    }
   }
 
   void _undoLastAction() {
@@ -369,36 +428,41 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     int number = lastAction['number'];
     String type = lastAction['type'];
 
-    setState(() {
-      if (type == 'good' && goodCounts[number]! > 0) {
-        goodCounts[number] = goodCounts[number]! - 1;
-      } else if (type == 'missed' && missedCounts[number]! > 0) {
-        missedCounts[number] = missedCounts[number]! - 1;
-      }
-      showUndo = actionHistory.isNotEmpty;
-    });
+    if (mounted) {
+      setState(() {
+        if (type == 'good' && goodCounts[number]! > 0) {
+          goodCounts[number] = goodCounts[number]! - 1;
+        } else if (type == 'missed' && missedCounts[number]! > 0) {
+          missedCounts[number] = missedCounts[number]! - 1;
+        }
+        showUndo = actionHistory.isNotEmpty;
+      });
+    }
   }
 
   void _handleNumberTap(int number, double scaledX, double scaledY) {
-    setState(() {
-      if (selectedNumber == number) {
-        selectedNumber = null;
-        selectedPosition = null;
-      } else {
-        selectedNumber = number;
-        selectedPosition = Offset(scaledX, scaledY);
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (selectedNumber == number) {
+          selectedNumber = null;
+          selectedPosition = null;
+        } else {
+          selectedNumber = number;
+          selectedPosition = Offset(scaledX, scaledY);
+        }
+      });
+    }
   }
 
   Future<void> _savePracticeResults() async {
-    // Show confirmation dialog
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Save Practice'),
-          content: Text('Are you sure you want to save this practice session?'),
+          title: const Text('Save Practice'),
+          content: const Text(
+            'Are you sure you want to save this practice session?',
+          ),
           actions: <Widget>[
             TextButton(
               child: Text('Cancel', style: TextStyle(color: red)),
@@ -413,40 +477,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
     );
 
-    if (confirm != true) return; // User canceled
+    if (confirm != true) return;
 
     final success = await firestoreService.savePracticeSession(
       goodCounts,
       missedCounts,
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Practice session saved!' : 'Failed to save session',
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? 'Practice session saved!' : 'Failed to save session',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
+      );
 
-    if (success) {
-      // Clear counts after successful save if needed
-      setState(() {
-        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-        actionHistory.clear();
-      });
+      if (success) {
+        setState(() {
+          goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+          missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+          actionHistory.clear();
+        });
+      }
     }
   }
 
   void _deletePracticeResults() async {
-    // Show confirmation dialog
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Practice Data'),
-          content: Text(
+          title: const Text('Delete Practice Data'),
+          content: const Text(
             'Are you sure you want to delete all practice data? This cannot be undone.',
           ),
           actions: <Widget>[
@@ -463,25 +527,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
     );
 
-    if (confirm != true) return; // User canceled
+    if (confirm != true) return;
 
-    setState(() {
-      // Reset all good and missed counts to 0 for each position
-      goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
-      missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
-      // Clear action history to prevent undoing after deletion
-      actionHistory.clear();
-      // Reset selected position indicators
-      selectedNumber = null;
-      selectedPosition = null;
-    });
+    if (mounted) {
+      setState(() {
+        goodCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        missedCounts = {for (var i = 1; i <= 16; i++) i: 0};
+        actionHistory.clear();
+        selectedNumber = null;
+        selectedPosition = null;
+      });
 
-    // Show confirmation feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('All practice data cleared!'),
-        backgroundColor: Colors.red,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All practice data cleared!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

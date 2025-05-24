@@ -1,8 +1,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
+ 
+    <!-- Basic internet permission (if you're using cloud services) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Required for speech recognition -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    
+    <!-- Required for wake lock to keep screen on -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- Optional but recommended for battery monitoring -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.BATTERY_STATS" />
+    
+    <!-- For Android 10+ you might need foreground service permission -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    
+    <!-- Add this if you want to prevent screen saver from activating -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
     <application
-        android:label="swee16"
+        android:label="swee-16"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
