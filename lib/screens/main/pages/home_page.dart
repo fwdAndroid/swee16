@@ -26,20 +26,35 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // --- NEW: Start voice mode automatically on app launch ---
+    // Using Future.microtask to ensure context is available after build method
+    // Also, wrap it in a condition to prevent multiple calls if initState is called multiple times
+    // (though for StatelessWidget, it's usually once per life cycle)
+    Future.microtask(() {
+      final speechProvider = Provider.of<SpeechProvider>(
+        context,
+        listen: false,
+      );
+      if (!speechProvider.isVoiceMode) {
+        // Only start if not already in voice mode
+        speechProvider.toggleVoiceMode(context: context);
+      }
+    });
+    // --- END NEW ---
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-    // This logic ensures voice mode is managed across app lifecycle
-    if (speechProvider.isVoiceMode) {
-      if (state == AppLifecycleState.paused) {
-        speechProvider.stopListening();
-      } else if (state == AppLifecycleState.resumed) {
-        // Only start if not already listening to avoid redundant calls
-        if (!speechProvider.isListening) {
-          speechProvider.startListening(context: context);
-        }
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      speechProvider.stopListening();
+    } else if (state == AppLifecycleState.resumed) {
+      // Only restart if voice mode was active before going to background
+      if (speechProvider.isVoiceMode) {
+        speechProvider.startListening(context: context);
       }
     }
   }
@@ -47,6 +62,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Ensure speech listening is stopped when the widget is disposed
+    Provider.of<SpeechProvider>(context, listen: false).stopListening();
     super.dispose();
   }
 
@@ -54,6 +71,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final speechProvider = Provider.of<SpeechProvider>(context);
     final practiceProvider = Provider.of<PracticeProvider>(context);
+    // Determine the text and colors for the Voice/Manual buttons
+    Color voiceButtonColor = speechProvider.isVoiceMode ? red : Colors.grey;
+    Color manualButtonColor =
+        speechProvider.isVoiceMode ? Colors.grey : Colors.orange;
+    Color voiceButtonTextColor =
+        speechProvider.isVoiceMode ? Colors.white : Colors.black;
+    Color manualButtonTextColor =
+        speechProvider.isVoiceMode ? Colors.black : Colors.white;
+    String statusText =
+        speechProvider.isVoiceMode
+            ? (speechProvider.isListening
+                ? 'Listening... Say "Good" or "Missed"'
+                : 'Initializing voice...')
+            : 'Manual Mode Active'; // Text for the status display
 
     return Scaffold(
       backgroundColor: blackColor,
@@ -66,44 +97,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: Column(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       VoiceManualWidget(
-                        styleColor: blackColor,
                         onTap: () {
-                          // Prevent enabling voice mode if battery is low
-                          if (practiceProvider.batteryLevel != null &&
-                              practiceProvider.batteryLevel! < 20) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Voice mode disabled - low battery (${practiceProvider.batteryLevel}%)',
-                                ),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                            return;
+                          if (!speechProvider.isVoiceMode) {
+                            speechProvider.toggleVoiceMode(context: context);
                           }
-                          speechProvider.toggleVoiceMode(context: context);
                         },
-                        color:
-                            speechProvider.isVoiceMode ? mainColor : labelColor,
-                        titleText:
-                            speechProvider.isVoiceMode
-                                ? 'Listening...'
-                                : 'Voice',
+                        color: voiceButtonColor,
+                        titleText: 'Voice',
+                        styleColor: voiceButtonTextColor,
                       ),
-                      const SizedBox(width: 10),
                       VoiceManualWidget(
-                        styleColor: blackColor,
                         onTap: () {
-                          speechProvider.setManualMode();
+                          if (speechProvider.isVoiceMode) {
+                            speechProvider.setManualMode();
+                          }
                         },
-                        color:
-                            !speechProvider.isVoiceMode
-                                ? mainColor
-                                : labelColor,
+                        color: manualButtonColor,
                         titleText: 'Manual',
+                        styleColor: manualButtonTextColor,
                       ),
                     ],
                   ),
@@ -125,10 +139,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      speechProvider.isListening
-                          ? 'Listening... Say "Good" or "Missed"'
-                          : 'Press Voice button to start',
-                      style: TextStyle(color: whiteColor, fontSize: 16),
+                      statusText, // Use the dynamically determined statusText
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            speechProvider.isVoiceMode
+                                ? Colors.green
+                                : Colors.red,
+                      ),
                     ),
                   ],
                 ),
@@ -185,31 +204,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: Column(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       GoodMissedButtonWidget(
-                        onTap: () {
-                          if (!speechProvider.isVoiceMode) {
-                            practiceProvider.incrementCounter('good');
-                          }
-                        },
-                        color: mainColor,
-                        titleText: 'Good',
+                        onTap:
+                            speechProvider.isVoiceMode
+                                ? null
+                                : () =>
+                                    practiceProvider.incrementCounter('good'),
+                        color: Colors.green,
+                        titleText: 'GOOD',
                         subtitleText: practiceProvider.totalGood.toString(),
                       ),
-                      const SizedBox(width: 10),
                       GoodMissedButtonWidget(
-                        onTap: () {
-                          if (!speechProvider.isVoiceMode) {
-                            practiceProvider.incrementCounter('missed');
-                          }
-                        },
+                        onTap:
+                            speechProvider.isVoiceMode
+                                ? null
+                                : () =>
+                                    practiceProvider.incrementCounter('missed'),
                         color: red,
-                        titleText: 'Missed',
+                        titleText: 'MISSED',
                         subtitleText: practiceProvider.totalMissed.toString(),
                       ),
                     ],
                   ),
+
                   Center(
                     child: TextButton(
                       onPressed: practiceProvider.undoLastAction,

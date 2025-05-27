@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import provider for context.read
+import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:swee16/provider/practice_provider.dart';
 
@@ -9,6 +9,7 @@ class SpeechProvider extends ChangeNotifier {
   bool _isListening = false;
   bool _isVoiceMode = false;
   Timer? _voiceDebounce;
+  Timer? _restartListeningTimer; // Timer for restarting listening sessions
 
   bool get isListening => _isListening;
   bool get isVoiceMode => _isVoiceMode;
@@ -19,21 +20,36 @@ class SpeechProvider extends ChangeNotifier {
   }
 
   Future<void> _initSpeech() async {
+    // Only initialize if not already available
     if (!_speechToText.isAvailable) {
       bool available = await _speechToText.initialize(
         onStatus: (status) {
           _isListening = status == 'listening';
           notifyListeners();
+
+          // This block ensures that if listening *stops* for any reason
+          // (including natural end of listenFor duration, or errors),
+          // we attempt to restart it IF voice mode is still ON.
+          if (status == 'notListening' && _isVoiceMode) {
+            print(
+              'VOICE DEBUG: SpeechToText status changed to notListening. Attempting restart.',
+            );
+            // Context is passed from startListening, so it might be null here
+            // but the _scheduleRestartListening can handle it.
+            _scheduleRestartListening(context: null);
+          }
         },
         onError: (error) {
-          print('SpeechToText Error: $error');
-          _isListening = false;
-          _isVoiceMode = false;
+          print('SpeechToText Error during initialization: $error');
+          _isListening = false; // Update listening status in UI
           notifyListeners();
+          // DO NOT set _isVoiceMode = false here.
+          // The onStatus handler will primarily deal with restarting.
         },
       );
       if (!available) {
         print('Speech recognition not available on this device.');
+        // Consider disabling the voice mode button or showing a persistent error if truly unavailable.
       }
     }
   }
@@ -50,83 +66,130 @@ class SpeechProvider extends ChangeNotifier {
 
   void setManualMode() {
     _isVoiceMode = false;
-    stopListening();
+    stopListening(); // This will also cancel any pending restart timers
     notifyListeners();
   }
 
-  void startListening({BuildContext? context}) async {
-    if (!_isVoiceMode) return;
+  // Centralized function to schedule a restart
+  void _scheduleRestartListening({BuildContext? context}) {
+    // Cancel any existing restart timer to prevent multiple restarts
+    _restartListeningTimer?.cancel();
 
+    if (_isVoiceMode) {
+      // Only schedule if voice mode is still desired
+      _restartListeningTimer = Timer(const Duration(milliseconds: 300), () {
+        if (_isVoiceMode && !_speechToText.isListening) {
+          // Double check conditions before restarting
+          print('VOICE DEBUG: Restarting listening session...');
+          startListening(context: context);
+        } else if (!_isVoiceMode) {
+          print('VOICE DEBUG: Not restarting, voice mode was turned off.');
+        }
+      });
+    }
+  }
+
+  void startListening({BuildContext? context}) async {
+    if (!_isVoiceMode) return; // Only proceed if voice mode is intentionally ON
+
+    // Ensure speech recognition is available first
     if (!_speechToText.isAvailable) {
-      bool available = await _speechToText.initialize();
+      bool available = await _speechToText.initialize(
+        onStatus: (status) {
+          _isListening = status == 'listening';
+          notifyListeners();
+          if (status == 'notListening' && _isVoiceMode) {
+            _scheduleRestartListening(context: context);
+          }
+        },
+        onError: (error) {
+          print('SpeechToText Error during active listening: $error');
+          _isListening = false; // Update listening status in UI
+          notifyListeners();
+
+          // --- MODIFICATION: Removed incrementing 'missed' on 'error_no_match' ---
+          // Previously: if (error.errorMsg == 'error_no_match' && error.permanent && context != null) {
+          //                Provider.of<PracticeProvider>(context, listen: false).incrementCounter('missed', specificNumber: null);
+          //                print('VOICE DEBUG: Recognized nothing (no_match error), incrementing missed.');
+          //              }
+          // Now, this specific increment is removed as per user's request.
+          // --- END MODIFICATION ---
+
+          // Schedule restart after any error (unless voice mode is explicitly off)
+          _scheduleRestartListening(context: context);
+        },
+      );
       if (!available) {
         if (context != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Speech recognition not available.'),
+              content: Text('Speech recognition not available on this device.'),
               backgroundColor: Colors.red,
             ),
           );
         }
-        _isVoiceMode = false;
+        _isVoiceMode =
+            false; // Disable voice mode only if STT is truly unavailable
         notifyListeners();
         return;
       }
     }
 
+    // Stop any existing session before starting a new one
     if (_speechToText.isListening) {
       _speechToText.stop();
     }
 
-    _isListening = true;
+    _isListening = true; // Set listening state before starting
     notifyListeners();
 
     _speechToText.listen(
       onResult: (result) {
+        print(
+          'VOICE DEBUG: Recognized (partial/final): "${result.recognizedWords}" (Final: ${result.finalResult})',
+        );
         if (result.finalResult) {
           String recognizedText = result.recognizedWords.toLowerCase();
-          _processVoiceCommand(recognizedText, context); // Pass context here
+          _processVoiceCommand(recognizedText, context);
 
-          // Re-start listening after processing a final result
-          // Only if voice mode is still active and not already listening.
-          // Add a small delay to prevent rapid restarts overwhelming the system.
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (_isVoiceMode && !_speechToText.isListening) {
-              startListening(context: context);
-            }
-          });
+          // After a final result, schedule a restart.
+          _scheduleRestartListening(context: context);
         }
       },
-      listenFor: const Duration(seconds: 10), // Listen for a longer period
-      cancelOnError: false, // Keep listening even if an error occurs
-      partialResults: false,
-      listenMode:
-          ListenMode.dictation, // More suitable for continuous listening
+      listenFor: const Duration(seconds: 10), // Maximum duration to listen for
+      cancelOnError: false, // Prevents automatic stopping on some errors
+      partialResults: false, // Only interested in final results for commands
+      listenMode: ListenMode.dictation, // Optimized for general speech
     );
   }
 
   void stopListening() {
+    // Cancel any pending restart timers first
+    _restartListeningTimer?.cancel();
+    _restartListeningTimer = null;
+
     if (_speechToText.isListening) {
       _speechToText.stop();
     }
     _isListening = false;
-    _voiceDebounce?.cancel();
+    _voiceDebounce?.cancel(); // Cancel any pending debounce timers
     notifyListeners();
   }
 
-  // Pass context to this method to access PracticeProvider
   void _processVoiceCommand(String text, BuildContext? context) {
-    _voiceDebounce?.cancel(); // Cancel any previous debounce
+    print('VOICE DEBUG: Raw recognized text for command processing: "$text"');
+
+    _voiceDebounce
+        ?.cancel(); // Cancel any previous debounce if a new command comes in quickly
 
     _voiceDebounce = Timer(const Duration(milliseconds: 500), () {
-      if (context == null) return; // Ensure context is available
+      if (context == null) return;
 
       final practiceProvider = Provider.of<PracticeProvider>(
         context,
         listen: false,
       );
 
-      // Extract number if present (e.g., "good 5", "missed 12")
       int? recognizedNumber;
       final RegExp numRegExp = RegExp(
         r'\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|\d+)\b',
@@ -137,7 +200,6 @@ class SpeechProvider extends ChangeNotifier {
         for (final m in matches) {
           final String? numWord = m.group(1);
           if (numWord != null) {
-            // Basic word to number conversion (can be expanded)
             switch (numWord) {
               case 'one':
                 recognizedNumber = 1;
@@ -188,21 +250,21 @@ class SpeechProvider extends ChangeNotifier {
                 recognizedNumber = 16;
                 break;
               default:
-                // Try parsing as an integer if it's a digit string
                 recognizedNumber = int.tryParse(numWord);
                 break;
             }
             if (recognizedNumber != null &&
-                recognizedNumber! >= 1 &&
-                recognizedNumber! <= 16) {
+                recognizedNumber >= 1 &&
+                recognizedNumber <= 16) {
               break; // Found a valid number, stop searching
             } else {
-              recognizedNumber = null; // Reset if number is out of range
+              recognizedNumber = null; // Reset if invalid number found
             }
           }
         }
       }
 
+      // Logic: If it contains 'good', it's a good shot. Otherwise, it's a missed shot.
       if (text.contains('good')) {
         practiceProvider.incrementCounter(
           'good',
@@ -211,23 +273,24 @@ class SpeechProvider extends ChangeNotifier {
         print(
           'Voice Command: Good shot at spot ${recognizedNumber ?? 'selected/default'}',
         );
-      } else if (text.contains('miss') || text.contains('mist')) {
+      } else {
         practiceProvider.incrementCounter(
           'missed',
           specificNumber: recognizedNumber,
         );
         print(
-          'Voice Command: Missed shot at spot ${recognizedNumber ?? 'selected/default'}',
+          'Voice Command: Missed shot at spot ${recognizedNumber ?? 'selected/default'} (Any other recognized speech)',
         );
       }
-      // No need to re-start listening here, the onResult callback handles it
     });
   }
 
   @override
   void dispose() {
     _voiceDebounce?.cancel();
-    _speechToText.stop();
+    _restartListeningTimer?.cancel(); // Cancel any pending restart timers
+    _speechToText
+        .stop(); // Ensure speech recognition is stopped when provider is disposed
     super.dispose();
   }
 }
