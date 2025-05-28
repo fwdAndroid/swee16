@@ -21,6 +21,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const double courtWidth = 420;
   static const double courtHeight = 310;
   double? selectedDx, selectedDy;
+  bool _isScreenVisible = true;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkScreenVisibility();
+  }
+
+  void _checkScreenVisibility() {
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (_isScreenVisible != isCurrent) {
+      setState(() => _isScreenVisible = isCurrent);
+      final speechProvider = Provider.of<SpeechProvider>(
+        context,
+        listen: false,
+      );
+
+      if (isCurrent) {
+        if (speechProvider.isVoiceMode && !speechProvider.isListening) {
+          speechProvider.startListening(context: context);
+        }
+      } else {
+        speechProvider.stopListening();
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -45,30 +70,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      speechProvider.stopListening();
-    } else if (state == AppLifecycleState.resumed) {
-      // Only restart if voice mode was active before going to background
-      if (speechProvider.isVoiceMode) {
-        speechProvider.startListening(context: context);
-      }
-    }
-  }
-
-  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Ensure speech listening is stopped when the widget is disposed
-    Provider.of<SpeechProvider>(context, listen: false).stopListening();
+    // Remove this line:
+    // Provider.of<SpeechProvider>(context, listen: false).stopListening();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+
+    if (state == AppLifecycleState.resumed && _isScreenVisible) {
+      if (speechProvider.isVoiceMode) {
+        speechProvider.startListening(context: context);
+      }
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      speechProvider.stopListening();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkScreenVisibility(),
+    );
+
     final speechProvider = Provider.of<SpeechProvider>(context);
     final practiceProvider = Provider.of<PracticeProvider>(context);
     // Determine the text and colors for the Voice/Manual buttons
@@ -101,16 +129,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     children: [
                       VoiceManualWidget(
                         onTap: () {
-                          if (!speechProvider.isVoiceMode) {
-                            speechProvider.toggleVoiceMode(context: context);
-                          }
-                        },
-                        color: voiceButtonColor,
-                        titleText: 'Voice',
-                        styleColor: voiceButtonTextColor,
-                      ),
-                      VoiceManualWidget(
-                        onTap: () {
                           if (speechProvider.isVoiceMode) {
                             speechProvider.setManualMode();
                           }
@@ -118,6 +136,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         color: manualButtonColor,
                         titleText: 'Manual',
                         styleColor: manualButtonTextColor,
+                      ),
+                      VoiceManualWidget(
+                        onTap: () {
+                          if (!speechProvider.isVoiceMode) {
+                            speechProvider.toggleVoiceMode(context: context);
+                          }
+                        },
+                        color: voiceButtonColor,
+                        titleText: 'Voice',
+                        styleColor: voiceButtonTextColor,
                       ),
                     ],
                   ),

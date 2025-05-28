@@ -63,8 +63,15 @@ class SpeechProvider extends ChangeNotifier {
   }
 
   void startListening({BuildContext? context}) async {
+    // Safety check: ensure context is valid and mounted
+    if (context != null && !context.mounted) {
+      print("Context not available or not mounted");
+      return;
+    }
+
     if (!_isVoiceMode) return;
 
+    // Initialize speech recognition if needed
     if (!_speechToText.isAvailable) {
       bool available = await _speechToText.initialize(
         onStatus: (status) {
@@ -75,27 +82,26 @@ class SpeechProvider extends ChangeNotifier {
           }
         },
         onError: (error) {
-          print('Listening Error: $error');
+          print('Initialization Error: $error');
           _isListening = false;
           notifyListeners();
 
-          // Handle no-match errors
-          if (error.errorMsg == 'error_no_match' && context != null) {
-            Provider.of<PracticeProvider>(
-              context,
-              listen: false,
-            ).incrementCounter('missed', specificNumber: null);
+          // Handle errors during initialization
+          if (!error.permanent) {
+            _scheduleRestartListening(context: context);
           }
-          _scheduleRestartListening(context: context);
         },
       );
+
       if (!available) {
+        print('Speech recognition unavailable');
         _isVoiceMode = false;
         notifyListeners();
         return;
       }
     }
 
+    // Stop any existing listening session
     if (_speechToText.isListening) {
       _speechToText.stop();
     }
@@ -103,17 +109,44 @@ class SpeechProvider extends ChangeNotifier {
     _isListening = true;
     notifyListeners();
 
+    // Start new listening session
     _speechToText.listen(
       onResult: (result) {
         if (result.finalResult) {
-          _processVoiceCommand(result.recognizedWords.toLowerCase(), context);
+          // Process command only if context is still valid
+          if (context != null && context.mounted) {
+            _processVoiceCommand(result.recognizedWords.toLowerCase(), context);
+          }
           _scheduleRestartListening(context: context);
         }
       },
-      listenFor: const Duration(seconds: 10),
-      cancelOnError: false,
+      listenFor: const Duration(seconds: 5),
+      cancelOnError: true,
       partialResults: false,
       listenMode: ListenMode.dictation,
+      listenOptions: SpeechListenOptions(autoPunctuation: true),
+      // onError: (error) {
+      //   print('Listening Error: $error');
+      //   _isListening = false;
+      //   notifyListeners();
+
+      //   // Handle different error types
+      //   if (error.errorMsg == 'error_no_match') {
+      //     // Treat "no match" as temporary error
+      //     _scheduleRestartListening(context: context);
+
+      //     // Also increment missed shot if context is valid
+      //     if (context != null && context.mounted) {
+      //       Provider.of<PracticeProvider>(
+      //         context,
+      //         listen: false,
+      //       ).incrementCounter('missed');
+      //     }
+      //   } else if (!error.permanent) {
+      //     // Schedule restart for other temporary errors
+      //     _scheduleRestartListening(context: context);
+      //   }
+      // },
     );
   }
 
@@ -140,7 +173,7 @@ class SpeechProvider extends ChangeNotifier {
   void _processVoiceCommand(String text, BuildContext? context) {
     _voiceDebounce?.cancel();
     _voiceDebounce = Timer(const Duration(milliseconds: 500), () {
-      if (context == null) return;
+      if (context == null || !context.mounted) return;
 
       final practiceProvider = Provider.of<PracticeProvider>(
         context,
