@@ -10,9 +10,6 @@ import 'package:swee16/widget/functions_button_widget.dart';
 import 'package:swee16/widget/good_missed_button_widget.dart';
 import 'package:swee16/widget/voice_manual_button_widget.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver =
-    RouteObserver<ModalRoute<void>>();
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -47,21 +44,37 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // --- END NEW ---
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      speechProvider.stopListening();
-    } else if (state == AppLifecycleState.resumed) {
-      // Only restart if voice mode was active before going to background
-      if (speechProvider.isVoiceMode) {
-        speechProvider.startListening(context: context);
-      }
-    }
-  }
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+  //   if (state == AppLifecycleState.inactive ||
+  //       state == AppLifecycleState.paused ||
+  //       state == AppLifecycleState.detached) {
+  //     speechProvider.stopListening();
+  //   } else if (state == AppLifecycleState.resumed) {
+  //     // Only restart if voice mode was active before going to background
+  //     if (speechProvider.isVoiceMode) {
+  //       speechProvider.startListening(context: context);
+  //     }
+  //   }
+  // }
 
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+  //   if (state == AppLifecycleState.inactive ||
+  //       state == AppLifecycleState.paused ||
+  //       state == AppLifecycleState.detached) {
+  //     speechProvider.stopListening();
+  //     // Add this line to set manual mode when the app is not active
+  //     speechProvider.setManualMode();
+  //   } else if (state == AppLifecycleState.resumed) {
+  //     // Only restart if voice mode was active before going to background
+  //     if (speechProvider.isVoiceMode) {
+  //       speechProvider.startListening(context: context);
+  //     }
+  //   }
+  // }
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);

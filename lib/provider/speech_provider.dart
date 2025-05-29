@@ -149,7 +149,9 @@ class SpeechProvider extends ChangeNotifier {
 
       // Improved command matching with regex
       final bool isGood = RegExp(r'\b(good)\b').hasMatch(text);
-      final bool isMissed = RegExp(r'\b(missed)\b').hasMatch(text);
+      final bool isMissed = RegExp(
+        r'\b(missed || misng || missing || mist || mis || miss || mis || mst})\b',
+      ).hasMatch(text);
 
       // Number extraction logic
       int? recognizedNumber;
@@ -189,12 +191,6 @@ class SpeechProvider extends ChangeNotifier {
           specificNumber: recognizedNumber,
         );
       } else if (isMissed) {
-        practiceProvider.incrementCounter(
-          'missed',
-          specificNumber: recognizedNumber,
-        );
-      } else {
-        // Increment missed for any unrecognized speech
         practiceProvider.incrementCounter(
           'missed',
           specificNumber: recognizedNumber,

@@ -25,7 +25,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PracticeProvider()),
       ],
       child: MaterialApp(
-        navigatorObservers: [routeObserver], // ✅ Add this line
         title: 'Flutter Demo',
         theme: ThemeData(
           // This is the theme of your application.
