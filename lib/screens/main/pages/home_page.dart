@@ -10,6 +10,9 @@ import 'package:swee16/widget/functions_button_widget.dart';
 import 'package:swee16/widget/good_missed_button_widget.dart';
 import 'package:swee16/widget/voice_manual_button_widget.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
