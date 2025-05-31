@@ -156,9 +156,6 @@ class SpeechProvider extends ChangeNotifier {
     _voiceDebounce = Timer(const Duration(milliseconds: 300), () {
       final cleanedText = text.trim();
 
-      // Debug log for all voice inputs
-      print("VOICE INPUT: '$cleanedText'");
-
       if (cleanedText.isEmpty || !RegExp(r'[a-zA-Z]').hasMatch(cleanedText)) {
         print("Ignored voice input: '$text'");
         return;
@@ -172,23 +169,17 @@ class SpeechProvider extends ChangeNotifier {
       final commandHandled = _handleCommand(cleanedText);
       if (!commandHandled) {
         print("Unrecognized command: '$text'");
-      } else {
-        print("Command processed: '$text'");
       }
     });
   }
 
   bool _handleCommand(String text) {
-    final isGood = RegExp(
-      r'(^|\s)(good|yes|correct|nice|made|score|swish|hit|yes|yep|yeah)($|\s)',
-      caseSensitive: false,
-    ).hasMatch(text);
-
+    final isGood = RegExp(r'\b(good|yes|correct|nice)\b').hasMatch(text);
     final isMissed = RegExp(
-      r'(^|\s)(missed|miss|missing|mist|fail|wrong|no|nope|nah|airball|brick)($|\s)',
-      caseSensitive: false,
+      r'\b(m|missed|miss|misst|missing|mist|misset|mi|mis|bad|fail|wrong|no)\b',
     ).hasMatch(text);
-    final number = extractNumber(text);
+    final number = _extractNumber(text);
+
     if (isGood) {
       _practiceProvider!.incrementCounter('good', specificNumber: number);
       return true;
@@ -199,7 +190,7 @@ class SpeechProvider extends ChangeNotifier {
     return false;
   }
 
-  int? extractNumber(String text) {
+  int? _extractNumber(String text) {
     const numberWords = {
       'one': 1,
       'two': 2,
@@ -217,36 +208,17 @@ class SpeechProvider extends ChangeNotifier {
       'fourteen': 14,
       'fifteen': 15,
       'sixteen': 16,
-      '1': 1,
-      '2': 2,
-      '3': 3,
-      '4': 4,
-      '5': 5,
-      '6': 6,
-      '7': 7,
-      '8': 8,
-      '9': 9,
-      '10': 10,
-      '11': 11,
-      '12': 12,
-      '13': 13,
-      '14': 14,
-      '15': 15,
-      '16': 16,
     };
 
-    final pattern = RegExp(
-      r'(\b\d+\b|\bone\b|\btwo\b|\bthree\b|\bfour\b|\bfive\b|\bsix\b|\bseven\b|\beight\b|\bnine\b|\bten\b|\beleven\b|\btwelve\b|\bthirteen\b|\bfourteen\b|\bfifteen\b|\bsixteen\b)',
-      caseSensitive: false,
-    );
+    // Create a safe regex pattern
+    final pattern = '\\b(\\d+|${numberWords.keys.join('|')})\\b';
+    final match = RegExp(pattern, caseSensitive: false).firstMatch(text);
 
-    final matches = pattern.allMatches(text);
-    for (final match in matches) {
-      final numberString = match.group(0)?.toLowerCase();
-      if (numberString != null && numberWords.containsKey(numberString)) {
-        return numberWords[numberString];
-      }
+    if (match != null) {
+      final numberString = match.group(1)!.toLowerCase();
+      return numberWords[numberString] ?? int.tryParse(numberString);
     }
+    return null;
   }
 
   @override

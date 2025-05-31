@@ -140,7 +140,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(width: 8),
                     Text(
                       speechProvider.isListening
-                          ? 'Listening... Say "Good" or "Missed"'
+                          ? 'Listening... Say "Good" or "Missed'
                           : 'Voice mode inactive',
                       style: TextStyle(
                         fontSize: 16,
