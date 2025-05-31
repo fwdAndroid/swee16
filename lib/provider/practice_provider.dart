@@ -82,7 +82,7 @@ class PracticeProvider extends ChangeNotifier {
 
   // Method to undo the last action
   void undoLastAction() {
-    if (_actionHistory.isEmpty) return; // Nothing to undo
+    if (_actionHistory.isEmpty) return;
 
     var lastAction = _actionHistory.removeLast();
     int number = lastAction['number'];
@@ -93,8 +93,32 @@ class PracticeProvider extends ChangeNotifier {
     } else if (type == 'missed' && _missedCounts[number]! > 0) {
       _missedCounts[number] = _missedCounts[number]! - 1;
     }
-    _showUndo = _actionHistory.isNotEmpty; // Update undo flag
-    notifyListeners(); // Notify listeners that state has changed
+
+    // Preserve selection if it's the same number
+    if (_selectedNumber == number) {
+      _selectedNumber = number;
+    } else {
+      _selectedNumber = null;
+      _selectedPosition = null;
+    }
+
+    _showUndo = _actionHistory.isNotEmpty;
+    notifyListeners();
+  }
+
+  void manualIncrementCounter(String type) {
+    if (_selectedNumber == null) return;
+
+    if (type == 'good') {
+      _goodCounts[_selectedNumber!] = (_goodCounts[_selectedNumber!] ?? 0) + 1;
+    } else if (type == 'missed') {
+      _missedCounts[_selectedNumber!] =
+          (_missedCounts[_selectedNumber!] ?? 0) + 1;
+    }
+
+    _actionHistory.add({'type': type, 'number': _selectedNumber!});
+    _showUndo = _actionHistory.isNotEmpty;
+    notifyListeners();
   }
 
   // Save practice results

@@ -20,66 +20,55 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const double courtWidth = 420;
   static const double courtHeight = 310;
-  double? selectedDx, selectedDy;
+  bool _providersLinked = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    // --- NEW: Start voice mode automatically on app launch ---
-    // Using Future.microtask to ensure context is available after build method
-    // Also, wrap it in a condition to prevent multiple calls if initState is called multiple times
-    // (though for StatelessWidget, it's usually once per life cycle)
-    Future.microtask(() {
-      final speechProvider = Provider.of<SpeechProvider>(
-        context,
-        listen: false,
-      );
-      if (!speechProvider.isVoiceMode) {
-        // Only start if not already in voice mode
-        speechProvider.toggleVoiceMode(context: context);
-      }
-    });
-    // --- END NEW ---
   }
 
-  // @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-  //   final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-  //   if (state == AppLifecycleState.inactive ||
-  //       state == AppLifecycleState.paused ||
-  //       state == AppLifecycleState.detached) {
-  //     speechProvider.stopListening();
-  //   } else if (state == AppLifecycleState.resumed) {
-  //     // Only restart if voice mode was active before going to background
-  //     if (speechProvider.isVoiceMode) {
-  //       speechProvider.startListening(context: context);
-  //     }
-  //   }
-  // }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_providersLinked) {
+      _linkProviders();
+      _providersLinked = true;
+    }
+  }
 
-  // @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-  //   final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-  //   if (state == AppLifecycleState.inactive ||
-  //       state == AppLifecycleState.paused ||
-  //       state == AppLifecycleState.detached) {
-  //     speechProvider.stopListening();
-  //     // Add this line to set manual mode when the app is not active
-  //     speechProvider.setManualMode();
-  //   } else if (state == AppLifecycleState.resumed) {
-  //     // Only restart if voice mode was active before going to background
-  //     if (speechProvider.isVoiceMode) {
-  //       speechProvider.startListening(context: context);
-  //     }
-  //   }
-  // }
+  void _linkProviders() {
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+    final practiceProvider = Provider.of<PracticeProvider>(
+      context,
+      listen: false,
+    );
+
+    speechProvider.linkWithPracticeProvider(practiceProvider);
+
+    // Initialize voice mode only if not already active
+    if (!speechProvider.isVoiceMode) {
+      speechProvider.toggleVoiceMode();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+
+    if (state == AppLifecycleState.resumed && speechProvider.isVoiceMode) {
+      speechProvider.startListening();
+    } else if (state == AppLifecycleState.paused) {
+      speechProvider.stopListening();
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Ensure speech listening is stopped when the widget is disposed
-    Provider.of<SpeechProvider>(context, listen: false).stopListening();
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+    speechProvider.setManualMode();
     super.dispose();
   }
 
@@ -87,20 +76,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final speechProvider = Provider.of<SpeechProvider>(context);
     final practiceProvider = Provider.of<PracticeProvider>(context);
-    // Determine the text and colors for the Voice/Manual buttons
-    Color voiceButtonColor = speechProvider.isVoiceMode ? red : Colors.grey;
-    Color manualButtonColor =
-        speechProvider.isVoiceMode ? Colors.grey : Colors.orange;
-    Color voiceButtonTextColor =
-        speechProvider.isVoiceMode ? Colors.white : Colors.black;
-    Color manualButtonTextColor =
-        speechProvider.isVoiceMode ? Colors.black : Colors.white;
-    String statusText =
-        speechProvider.isVoiceMode
-            ? (speechProvider.isListening
-                ? 'Listening... Say "Good" or "Missed"'
-                : 'Initializing voice...')
-            : 'Manual Mode Active'; // Text for the status display
 
     return Scaffold(
       backgroundColor: blackColor,
@@ -118,12 +93,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       VoiceManualWidget(
                         onTap: () {
                           if (!speechProvider.isVoiceMode) {
-                            speechProvider.toggleVoiceMode(context: context);
+                            speechProvider.toggleVoiceMode();
                           }
                         },
-                        color: voiceButtonColor,
+                        color: speechProvider.isVoiceMode ? red : Colors.grey,
                         titleText: 'Voice',
-                        styleColor: voiceButtonTextColor,
+                        styleColor:
+                            speechProvider.isVoiceMode
+                                ? Colors.white
+                                : Colors.black,
                       ),
                       VoiceManualWidget(
                         onTap: () {
@@ -131,9 +109,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             speechProvider.setManualMode();
                           }
                         },
-                        color: manualButtonColor,
+                        color:
+                            speechProvider.isVoiceMode
+                                ? Colors.grey
+                                : Colors.orange,
                         titleText: 'Manual',
-                        styleColor: manualButtonTextColor,
+                        styleColor:
+                            speechProvider.isVoiceMode
+                                ? Colors.black
+                                : Colors.white,
                       ),
                     ],
                   ),
@@ -155,12 +139,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      statusText, // Use the dynamically determined statusText
+                      speechProvider.isListening
+                          ? 'Listening... Say "Good" or "Missed"'
+                          : 'Voice mode inactive',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color:
-                            speechProvider.isVoiceMode
+                            speechProvider.isListening
                                 ? Colors.green
                                 : Colors.red,
                       ),
@@ -170,7 +156,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             AspectRatio(
               aspectRatio: 420 / 310,
-
               child: LayoutBuilder(
                 builder: (ctx, box) {
                   return Stack(
@@ -184,22 +169,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       for (final spot in spots)
                         Positioned.fill(
                           left: (spot.x / courtWidth) * box.maxWidth,
-
                           top: (spot.y / courtHeight) * box.maxHeight,
-
                           child: BuildCircleWidget(
                             number: spot.number,
-
                             color: spot.color,
-
                             percentage: calculatePercentage(
                               practiceProvider.goodCounts[spot.number]!,
                               practiceProvider.missedCounts[spot.number]!,
                             ),
-
                             isSelected:
                                 practiceProvider.selectedNumber == spot.number,
-
                             onTap: () {
                               practiceProvider.handleNumberTap(
                                 spot.number,
@@ -214,7 +193,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 },
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
@@ -226,8 +204,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         onTap:
                             speechProvider.isVoiceMode
                                 ? null
-                                : () =>
-                                    practiceProvider.incrementCounter('good'),
+                                : () => practiceProvider.manualIncrementCounter(
+                                  'good',
+                                ),
                         color: Colors.green,
                         titleText: 'GOOD',
                         subtitleText: practiceProvider.totalGood.toString(),
@@ -236,20 +215,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         onTap:
                             speechProvider.isVoiceMode
                                 ? null
-                                : () =>
-                                    practiceProvider.incrementCounter('missed'),
+                                : () => practiceProvider.manualIncrementCounter(
+                                  'missed',
+                                ),
                         color: red,
                         titleText: 'MISSED',
                         subtitleText: practiceProvider.totalMissed.toString(),
                       ),
                     ],
                   ),
-
                   Center(
                     child: TextButton(
                       onPressed: practiceProvider.undoLastAction,
                       child: Text(
-                        "Undo Actions",
+                        "Undo Last Action",
                         style: TextStyle(color: whiteColor),
                       ),
                     ),
@@ -266,7 +245,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         Row(
                           children: [
                             Text(
-                              "Individual Shot: ",
+                              "Selected Shot: ",
                               style: TextStyle(color: whiteColor, fontSize: 16),
                             ),
                             Container(
@@ -283,7 +262,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               ),
                               child: Center(
                                 child: Text(
-                                  textAlign: TextAlign.center,
                                   practiceProvider.selectedNumber != null
                                       ? '${practiceProvider.selectedNumber}'
                                       : 'None',
@@ -308,13 +286,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
                   Text(
-                    'Overall Percentage: ${calculateOverallPercentage(practiceProvider.totalGood, practiceProvider.totalMissed)}',
+                    'Overall: ${calculateOverallPercentage(practiceProvider.totalGood, practiceProvider.totalMissed)}',
                     style: TextStyle(
                       color: whiteColor,
                       fontSize: 14,
@@ -323,100 +300,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Column(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            FunctionsButtonWidget(
-                              onTap: () async {
-                                bool? confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Save Practice'),
-                                      content: const Text(
-                                        'Are you sure you want to save this practice session?',
-                                      ),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          child: Text(
-                                            'Cancel',
-                                            style: TextStyle(color: red),
-                                          ),
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                        ),
-                                        TextButton(
-                                          child: Text(
-                                            'Save',
-                                            style: TextStyle(color: mainColor),
-                                          ),
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (confirm == true) {
-                                  practiceProvider.savePracticeResults(context);
-                                }
-                              },
-                              color: mainColor,
-                              titleText: 'Save Practice',
-                            ),
-                            const SizedBox(width: 10),
-                            FunctionsButtonWidget(
-                              onTap: () async {
-                                bool? confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Delete Practice Data'),
-                                      content: const Text(
-                                        'Are you sure you want to delete all practice data? This cannot be undone.',
-                                      ),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          child: Text(
-                                            'Cancel',
-                                            style: TextStyle(color: mainColor),
-                                          ),
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                        ),
-                                        TextButton(
-                                          child: Text(
-                                            'Delete',
-                                            style: TextStyle(color: red),
-                                          ),
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (confirm == true) {
-                                  practiceProvider.deletePracticeResults(
-                                    context,
-                                  );
-                                }
-                              },
-                              color: red,
-                              titleText: 'Delete practice',
-                            ),
-                          ],
+                        FunctionsButtonWidget(
+                          onTap:
+                              () => _showSaveConfirmation(
+                                context,
+                                practiceProvider,
+                              ),
+                          color: mainColor,
+                          titleText: 'Save Session',
+                        ),
+                        const SizedBox(width: 10),
+                        FunctionsButtonWidget(
+                          onTap:
+                              () => _showDeleteConfirmation(
+                                context,
+                                practiceProvider,
+                              ),
+                          color: red,
+                          titleText: 'Clear Data',
                         ),
                       ],
                     ),
@@ -428,5 +332,65 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  Future<void> _showSaveConfirmation(
+    BuildContext context,
+    PracticeProvider provider,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Save Practice Session'),
+            content: const Text(
+              'Are you sure you want to save this practice session?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel', style: TextStyle(color: red)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Save', style: TextStyle(color: mainColor)),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      provider.savePracticeResults(context);
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(
+    BuildContext context,
+    PracticeProvider provider,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Practice Data'),
+            content: const Text(
+              'All practice data will be permanently deleted. Continue?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel', style: TextStyle(color: mainColor)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Delete', style: TextStyle(color: red)),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      provider.deletePracticeResults(context);
+    }
   }
 }

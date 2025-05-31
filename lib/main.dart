@@ -21,7 +21,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SpeechProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final speechProvider = SpeechProvider();
+            // No need to setPracticeProvider here - done in HomePage
+            return speechProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => PracticeProvider()),
       ],
       child: MaterialApp(
