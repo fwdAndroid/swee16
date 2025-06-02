@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,8 @@ class PracticeProvider extends ChangeNotifier {
   bool _showUndo = false; // Internal flag for undo button logic
 
   final FirestoreService _firestoreService = FirestoreService();
-
+  final AudioPlayer _goodSoundPlayer = AudioPlayer();
+  final AudioPlayer _missedSoundPlayer = AudioPlayer();
   // Expose getters for state
   int? get batteryLevel => _batteryLevel;
   int? get selectedNumber => _selectedNumber;
@@ -58,7 +60,7 @@ class PracticeProvider extends ChangeNotifier {
 
   // Method to increment good/missed counts
   // This can be called from UI buttons OR voice commands
-  void incrementCounter(String type, {int? specificNumber}) {
+  void incrementCounter(String type, {int? specificNumber}) async {
     // If a specificNumber is provided (e.g., from a voice command "Good 5"), use it.
     // Otherwise, use the currently selected number.
     // If no number is selected, default to spot 1 (as in your original code)
@@ -75,9 +77,22 @@ class PracticeProvider extends ChangeNotifier {
     } else if (type == 'missed') {
       _missedCounts[targetNumber] = (_missedCounts[targetNumber] ?? 0) + 1;
     }
+    if (type == 'good') {
+      await _playSound(_goodSoundPlayer, 'sounds/good.mp3');
+    } else if (type == 'missed') {
+      await _playSound(_missedSoundPlayer, 'sounds/missed.mp3');
+    }
     _actionHistory.add({'type': type, 'number': targetNumber});
     _showUndo = _actionHistory.isNotEmpty; // Update undo flag
     notifyListeners(); // Notify listeners that state has changed
+  }
+
+  Future<void> _playSound(AudioPlayer player, String assetPath) async {
+    try {
+      await player.play(AssetSource(assetPath));
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
   }
 
   // Method to undo the last action
@@ -106,7 +121,7 @@ class PracticeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void manualIncrementCounter(String type) {
+  void manualIncrementCounter(String type) async {
     if (_selectedNumber == null) return;
 
     if (type == 'good') {
@@ -115,7 +130,11 @@ class PracticeProvider extends ChangeNotifier {
       _missedCounts[_selectedNumber!] =
           (_missedCounts[_selectedNumber!] ?? 0) + 1;
     }
-
+    if (type == 'good') {
+      await _playSound(_goodSoundPlayer, 'sounds/good.mp3');
+    } else if (type == 'missed') {
+      await _playSound(_missedSoundPlayer, 'sounds/missed.mp3');
+    }
     _actionHistory.add({'type': type, 'number': _selectedNumber!});
     _showUndo = _actionHistory.isNotEmpty;
     notifyListeners();
