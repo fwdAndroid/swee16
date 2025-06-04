@@ -1,7 +1,9 @@
 // Update SpeechProvider to fix both issues
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:swee16/provider/practice_provider.dart';
@@ -27,17 +29,35 @@ class SpeechProvider extends ChangeNotifier {
     _practiceProvider = provider;
   }
 
-  Future<void> _initSpeech() async {
-    if (_initialized) return;
+  static const MethodChannel _audioChannel = MethodChannel(
+    'com.example.audio_channel',
+  );
 
+  Future<void> _initSpeech() async {
     try {
+      // Mute sounds first
+      await _muteSystemSounds();
+
+      // Then initialize speech
       _initialized = await _speechToText.initialize(
         onStatus: _handleStatusUpdate,
         onError: _handleSpeechError,
       );
+
+      // iOS needs additional handling
+      if (Platform.isIOS) {
+        // await _prewarmSpeechRecognition();
+      }
     } catch (e) {
       print('Speech initialization failed: $e');
-      _initialized = false;
+    }
+  }
+
+  Future<void> _muteSystemSounds() async {
+    try {
+      await _audioChannel.invokeMethod('muteSounds');
+    } catch (e) {
+      print('Could not mute sounds: $e');
     }
   }
 

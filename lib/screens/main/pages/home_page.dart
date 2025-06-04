@@ -46,9 +46,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     speechProvider.linkWithPracticeProvider(practiceProvider);
 
-    // Initialize voice mode only if not already active
+    // Initialize or ensure voice mode is active and listening
     if (!speechProvider.isVoiceMode) {
-      speechProvider.toggleVoiceMode();
+      speechProvider
+          .toggleVoiceMode(); // This will set _isVoiceMode to true and call startListening()
+    } else {
+      // If it's already in voice mode (e.g., app resumed quickly, or previous state),
+      // ensure listening is active.
+      speechProvider.startListening();
     }
   }
 
@@ -68,7 +73,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-    speechProvider.setManualMode();
+    speechProvider
+        .setManualMode(); // This also calls stopListening() internally
     super.dispose();
   }
 
@@ -92,6 +98,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     children: [
                       VoiceManualWidget(
                         onTap: () {
+                          // Only toggle if not already in voice mode
                           if (!speechProvider.isVoiceMode) {
                             speechProvider.toggleVoiceMode();
                           }
@@ -105,6 +112,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       VoiceManualWidget(
                         onTap: () {
+                          // Only set manual mode if currently in voice mode
                           if (speechProvider.isVoiceMode) {
                             speechProvider.setManualMode();
                           }
@@ -140,7 +148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(width: 8),
                     Text(
                       speechProvider.isListening
-                          ? 'Listening... Say "Good" or "Missed'
+                          ? 'Listening... Say "Good" or "Missed"'
                           : 'Voice mode inactive',
                       style: TextStyle(
                         fontSize: 16,
@@ -203,7 +211,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       GoodMissedButtonWidget(
                         onTap:
                             speechProvider.isVoiceMode
-                                ? null
+                                ? null // Disable if in voice mode
                                 : () => practiceProvider.manualIncrementCounter(
                                   'good',
                                 ),
@@ -214,7 +222,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       GoodMissedButtonWidget(
                         onTap:
                             speechProvider.isVoiceMode
-                                ? null
+                                ? null // Disable if in voice mode
                                 : () => practiceProvider.manualIncrementCounter(
                                   'missed',
                                 ),
