@@ -1,6 +1,5 @@
 // Update SpeechProvider to fix both issues
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,41 +16,16 @@ class SpeechProvider extends ChangeNotifier {
   bool _initialized = false;
   PracticeProvider? _practiceProvider;
 
-  // Remove error counter and max retries since we don't want auto-switch
-  // int _errorCount = 0;
-  // static const int _maxErrorRetries = 3;
+  // Continuous listening flag to prevent beeps
+  bool _continuousListening = false;
 
   bool get isListening => _isListening;
   bool get isVoiceMode => _isVoiceMode;
   SpeechToText get speechToTextInstance => _speechToText;
 
-  void linkWithPracticeProvider(PracticeProvider provider) {
-    _practiceProvider = provider;
-  }
-
   static const MethodChannel _audioChannel = MethodChannel(
     'com.example.audio_channel',
   );
-
-  Future<void> _initSpeech() async {
-    try {
-      // Mute sounds first
-      await _muteSystemSounds();
-
-      // Then initialize speech
-      _initialized = await _speechToText.initialize(
-        onStatus: _handleStatusUpdate,
-        onError: _handleSpeechError,
-      );
-
-      // iOS needs additional handling
-      if (Platform.isIOS) {
-        // await _prewarmSpeechRecognition();
-      }
-    } catch (e) {
-      print('Speech initialization failed: $e');
-    }
-  }
 
   Future<void> _muteSystemSounds() async {
     try {
@@ -61,65 +35,145 @@ class SpeechProvider extends ChangeNotifier {
     }
   }
 
-  void _handleStatusUpdate(String status) {
-    _isListening = status == 'listening';
-    notifyListeners();
+  Future<void> _unmuteSystemSounds() async {
+    try {
+      await _audioChannel.invokeMethod('unmuteSounds');
+    } catch (e) {
+      print('Could not unmute sounds: $e');
+    }
+  }
 
-    if (status == 'notListening' && _isVoiceMode) {
+  void linkWithPracticeProvider(PracticeProvider provider) {
+    _practiceProvider = provider;
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      // Mute system sounds first
+      await _muteSystemSounds();
+
+      // Then initialize speech recognition
+      _initialized = await _speechToText.initialize(
+        onStatus: _handleStatusUpdate,
+        onError: _handleSpeechError,
+      );
+
+      if (_initialized) {
+        await _startSilentListening();
+      }
+    } catch (e) {
+      print('Speech initialization failed: $e');
+      // Ensure sounds are unmuted if initialization fails
+      await _unmuteSystemSounds();
+    }
+  }
+
+  Future<void> _startSilentListening() async {
+    try {
+      // Start listening in background without UI feedback
+      await _speechToText.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            _processVoiceCommand(result.recognizedWords.toLowerCase());
+          }
+        },
+        listenFor: Duration(minutes: 30), // Very long duration
+        pauseFor: Duration(minutes: 20),
+        cancelOnError: true,
+        partialResults: false,
+        listenMode: ListenMode.confirmation,
+        onSoundLevelChange: null, // Disable sound level callbacks
+      );
+      _continuousListening = true;
+    } catch (e) {
+      print('Background listening failed: $e');
+    }
+  }
+
+  void _handleStatusUpdate(String status) {
+    // Only update UI listening state if we're in voice mode
+    if (_isVoiceMode) {
+      _isListening = status == 'listening';
+      notifyListeners();
+    }
+
+    // Automatically restart if stopped unexpectedly
+    if (status == 'notListening' && _continuousListening) {
       _scheduleRestartListening();
     }
   }
 
   void _handleSpeechError(SpeechRecognitionError error) {
     print('Speech Error: ${error.errorMsg}');
-    _isListening = false;
-    notifyListeners();
-
-    // Remove auto-increment of missed shots
-    // if (error.errorMsg == 'error_no_match' && _practiceProvider != null) {
-    //   _practiceProvider!.incrementCounter('missed', specificNumber: null);
-    //   _errorCount++;
-    // }
-
-    // Remove auto-switch to manual mode
-    // if (_errorCount >= _maxErrorRetries) {
-    //   _handleExcessiveErrors();
-    // } else {
+    if (_isVoiceMode) {
+      _isListening = false;
+      notifyListeners();
+      // Ensure sounds are properly managed on error
+      _unmuteSystemSounds();
+      _muteSystemSounds();
+    }
     _scheduleRestartListening();
-    // }
   }
-
-  // Remove auto-switch function
-  // void _handleExcessiveErrors() {
-  //   print('Max error retries reached. Disabling voice mode.');
-  //   _isVoiceMode = false;
-  //   _isListening = false;
-  //   _errorCount = 0;
-  //   stopListening();
-  //   notifyListeners();
-  // }
 
   Future<void> toggleVoiceMode() async {
     if (!_initialized) await _initSpeech();
     if (!_initialized) return;
 
     _isVoiceMode = !_isVoiceMode;
+
     if (_isVoiceMode) {
-      // _errorCount = 0;  // No longer needed
-      startListening();
+      await _muteSystemSounds();
+      _isListening = _speechToText.isListening;
     } else {
-      stopListening();
+      await _unmuteSystemSounds();
+      _isListening = false;
     }
+
     notifyListeners();
   }
 
   void _scheduleRestartListening() {
+    if (!_continuousListening) return;
+
     _restartListeningTimer?.cancel();
-    _restartListeningTimer = Timer(const Duration(milliseconds: 500), () {
-      if (_isVoiceMode && !_speechToText.isListening) {
-        startListening();
+    _restartListeningTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!_speechToText.isListening && _continuousListening) {
+        _startSilentListening();
       }
     });
+  }
+
+  void _processVoiceCommand(String text) {
+    _voiceDebounce?.cancel();
+    _voiceDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!_isVoiceMode) return; // Ignore commands when not in voice mode
+
+      final cleanedText = text.trim();
+      if (cleanedText.isEmpty || !RegExp(r'[a-zA-Z]').hasMatch(cleanedText)) {
+        return;
+      }
+
+      if (_practiceProvider == null) return;
+
+      _handleCommand(cleanedText);
+    });
+  }
+
+  bool _handleCommand(String text) {
+    final isGood = RegExp(r'\b(good|yes|correct|nice)\b').hasMatch(text);
+    final isMissed = RegExp(
+      r'\b(m|missed|miss|misst|missing|mist|misset|mi|mis|bad|fail|wrong|no)\b',
+    ).hasMatch(text);
+    final number = _extractNumber(text);
+
+    if (isGood) {
+      _practiceProvider!.incrementCounter('good', specificNumber: number);
+      return true;
+    } else if (isMissed) {
+      _practiceProvider!.incrementCounter('missed', specificNumber: number);
+      return true;
+    }
+    return false;
   }
 
   Future<void> startListening() async {
@@ -137,7 +191,7 @@ class SpeechProvider extends ChangeNotifier {
             _scheduleRestartListening();
           }
         },
-        listenFor: const Duration(seconds: 10),
+        listenFor: const Duration(seconds: 30),
         cancelOnError: false,
         partialResults: false,
         listenMode: ListenMode.dictation,
@@ -169,45 +223,6 @@ class SpeechProvider extends ChangeNotifier {
       stopListening();
       notifyListeners();
     }
-  }
-
-  void _processVoiceCommand(String text) {
-    _voiceDebounce?.cancel();
-    _voiceDebounce = Timer(const Duration(milliseconds: 300), () {
-      final cleanedText = text.trim();
-
-      if (cleanedText.isEmpty || !RegExp(r'[a-zA-Z]').hasMatch(cleanedText)) {
-        print("Ignored voice input: '$text'");
-        return;
-      }
-
-      if (_practiceProvider == null) {
-        print('PracticeProvider not available');
-        return;
-      }
-
-      final commandHandled = _handleCommand(cleanedText);
-      if (!commandHandled) {
-        print("Unrecognized command: '$text'");
-      }
-    });
-  }
-
-  bool _handleCommand(String text) {
-    final isGood = RegExp(r'\b(good|yes|correct|nice)\b').hasMatch(text);
-    final isMissed = RegExp(
-      r'\b(m|missed|miss|misst|missing|mist|misset|mi|mis|bad|fail|wrong|no)\b',
-    ).hasMatch(text);
-    final number = _extractNumber(text);
-
-    if (isGood) {
-      _practiceProvider!.incrementCounter('good', specificNumber: number);
-      return true;
-    } else if (isMissed) {
-      _practiceProvider!.incrementCounter('missed', specificNumber: number);
-      return true;
-    }
-    return false;
   }
 
   int? _extractNumber(String text) {
@@ -245,7 +260,8 @@ class SpeechProvider extends ChangeNotifier {
   void dispose() {
     _voiceDebounce?.cancel();
     _restartListeningTimer?.cancel();
-    _speechToText.stop();
+    _speechToText.cancel();
+    _unmuteSystemSounds(); // Restore sounds when provider is disposed
     super.dispose();
   }
 }
