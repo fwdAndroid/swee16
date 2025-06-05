@@ -19,6 +19,9 @@
     <!-- Add this if you want to prevent screen saver from activating -->
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+<uses-permission android:name="android.permission.WRITE_SETTINGS" />
+
+<uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
 
     <application

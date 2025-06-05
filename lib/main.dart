@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:swee16/firebase_options.dart';
 import 'package:swee16/provider/practice_provider.dart';
 import 'package:swee16/provider/speech_provider.dart';
-import 'package:swee16/screens/main/pages/home_page.dart';
 import 'package:swee16/screens/splash_screen.dart';
 
 void main() async {
