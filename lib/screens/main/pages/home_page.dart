@@ -4,6 +4,7 @@ import 'package:swee16/helper/percentage_helper.dart';
 import 'package:swee16/model/spot_model.dart';
 import 'package:swee16/provider/practice_provider.dart';
 import 'package:swee16/provider/speech_provider.dart';
+import 'package:swee16/sound/sound_player.dart';
 import 'package:swee16/utils/color_platter.dart';
 import 'package:swee16/widget/build_circle_widget.dart';
 import 'package:swee16/widget/functions_button_widget.dart';
@@ -70,15 +71,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
-    speechProvider
-        .setManualMode(); // This also calls stopListening() internally
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final speechProvider = Provider.of<SpeechProvider>(context);
     final practiceProvider = Provider.of<PracticeProvider>(context);
@@ -132,36 +124,49 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
+
             if (speechProvider.isVoiceMode)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
                   children: [
-                    Icon(
-                      speechProvider.isListening ? Icons.mic : Icons.mic_off,
-                      color:
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
                           speechProvider.isListening
-                              ? Colors.green
-                              : Colors.red,
+                              ? Icons.mic
+                              : Icons.mic_off,
+                          color:
+                              speechProvider.isListening
+                                  ? Colors.green
+                                  : Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          speechProvider.isListening
+                              ? 'Listening... Say "Good" or "Missed"'
+                              : 'Voice mode inactive',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                speechProvider.isListening
+                                    ? Colors.green
+                                    : Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      speechProvider.isListening
-                          ? 'Listening... Say "Good" or "Missed"'
-                          : 'Voice mode inactive',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color:
-                            speechProvider.isListening
-                                ? Colors.green
-                                : Colors.red,
+                    if (practiceProvider.selectedNumber == null)
+                      Text(
+                        'Please tap a spot first',
+                        style: TextStyle(color: Colors.orange, fontSize: 14),
                       ),
-                    ),
                   ],
                 ),
               ),
+
             AspectRatio(
               aspectRatio: 420 / 310,
               child: LayoutBuilder(
@@ -215,7 +220,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 : () => practiceProvider.manualIncrementCounter(
                                   'good',
                                 ),
-                        color: Colors.green,
+                        color:
+                            practiceProvider.selectedNumber == null
+                                ? Colors.grey
+                                : Colors.green,
                         titleText: 'GOOD',
                         subtitleText: practiceProvider.totalGood.toString(),
                       ),
@@ -226,7 +234,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 : () => practiceProvider.manualIncrementCounter(
                                   'missed',
                                 ),
-                        color: red,
+                        color:
+                            practiceProvider.selectedNumber == null
+                                ? Colors.grey
+                                : red,
                         titleText: 'MISSED',
                         subtitleText: practiceProvider.totalMissed.toString(),
                       ),
@@ -306,6 +317,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
@@ -400,5 +412,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (confirmed == true) {
       provider.deletePracticeResults(context);
     }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    final speechProvider = Provider.of<SpeechProvider>(context, listen: false);
+    speechProvider.setManualMode();
+    SoundPlayer.dispose(); // Dispose the audio player
+    super.dispose();
   }
 }

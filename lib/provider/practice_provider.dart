@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:swee16/provider/speech_provider.dart';
-import 'package:swee16/services/database_service.dart'; // Make sure this path is correct
+import 'package:swee16/services/database_service.dart';
+import 'package:swee16/sound/sound_player.dart'; // Make sure this path is correct
 
 class PracticeProvider extends ChangeNotifier {
   final Battery _battery = Battery();
@@ -61,6 +62,12 @@ class PracticeProvider extends ChangeNotifier {
   // Method to increment good/missed counts
   // This can be called from UI buttons OR voice commands
   void incrementCounter(String type, {int? specificNumber}) async {
+    final number = specificNumber ?? selectedNumber;
+    if (number == null) {
+      showErrorMessage("Please select a spot first");
+      return;
+    }
+
     // If a specificNumber is provided (e.g., from a voice command "Good 5"), use it.
     // Otherwise, use the currently selected number.
     // If no number is selected, default to spot 1 (as in your original code)
@@ -73,26 +80,15 @@ class PracticeProvider extends ChangeNotifier {
     }
 
     if (type == 'good') {
-      _goodCounts[targetNumber] = (_goodCounts[targetNumber] ?? 0) + 1;
+      goodCounts[number] = (goodCounts[number] ?? 0) + 1;
+      SoundPlayer.playGoodSound(); // Play good sound
     } else if (type == 'missed') {
-      _missedCounts[targetNumber] = (_missedCounts[targetNumber] ?? 0) + 1;
-    }
-    if (type == 'good') {
-      await _playSound(_goodSoundPlayer, 'sounds/good.mp3');
-    } else if (type == 'missed') {
-      await _playSound(_missedSoundPlayer, 'sounds/missed.mp3');
+      missedCounts[number] = (missedCounts[number] ?? 0) + 1;
+      SoundPlayer.playMissedSound(); // Play missed sound
     }
     _actionHistory.add({'type': type, 'number': targetNumber});
     _showUndo = _actionHistory.isNotEmpty; // Update undo flag
     notifyListeners(); // Notify listeners that state has changed
-  }
-
-  Future<void> _playSound(AudioPlayer player, String assetPath) async {
-    try {
-      await player.play(AssetSource(assetPath));
-    } catch (e) {
-      print('Error playing sound: $e');
-    }
   }
 
   // Method to undo the last action
@@ -121,24 +117,55 @@ class PracticeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void showErrorMessage(String? message, {BuildContext? context}) {
+    _errorMessage = message;
+    notifyListeners();
+
+    if (message != null && context != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      });
+    }
+
+    // Clear after delay if not already cleared
+    if (message != null) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (_errorMessage == message) {
+          _errorMessage = null;
+          notifyListeners();
+        }
+      });
+    }
+  }
+
   void manualIncrementCounter(String type) async {
-    if (_selectedNumber == null) return;
+    if (selectedNumber == null) {
+      showErrorMessage("Please tap any spot first");
+    }
 
     if (type == 'good') {
+      SoundPlayer.playGoodSound(); // Play good sound
       _goodCounts[_selectedNumber!] = (_goodCounts[_selectedNumber!] ?? 0) + 1;
     } else if (type == 'missed') {
+      SoundPlayer.playMissedSound(); // Play good sound
       _missedCounts[_selectedNumber!] =
           (_missedCounts[_selectedNumber!] ?? 0) + 1;
     }
-    if (type == 'good') {
-      await _playSound(_goodSoundPlayer, 'sounds/good.mp3');
-    } else if (type == 'missed') {
-      await _playSound(_missedSoundPlayer, 'sounds/missed.mp3');
-    }
+
     _actionHistory.add({'type': type, 'number': _selectedNumber!});
     _showUndo = _actionHistory.isNotEmpty;
     notifyListeners();
   }
+
+  String? _errorMessage;
+
+  String? get errorMessage => _errorMessage;
 
   // Save practice results
   Future<bool> savePracticeResults(BuildContext context) async {

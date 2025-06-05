@@ -1,4 +1,3 @@
-// Update SpeechProvider to fix both issues
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -27,19 +26,32 @@ class SpeechProvider extends ChangeNotifier {
     'com.example.audio_channel',
   );
 
+  // --- ADDED: Method to set media volume to full ---
+  Future<void> _setMediaVolumeFull() async {
+    try {
+      await _audioChannel.invokeMethod('setMediaVolumeFull');
+      print('Dart: Called setMediaVolumeFull native method.');
+    } catch (e) {
+      print('Dart: Could not set media volume to full: $e');
+    }
+  }
+
+  // --- MODIFIED: These will now use the specific mute/unmute system sounds methods ---
   Future<void> _muteSystemSounds() async {
     try {
       await _audioChannel.invokeMethod('muteSounds');
+      print('Dart: Called muteSounds native method.');
     } catch (e) {
-      print('Could not mute sounds: $e');
+      print('Dart: Could not mute sounds: $e');
     }
   }
 
   Future<void> _unmuteSystemSounds() async {
     try {
       await _audioChannel.invokeMethod('unmuteSounds');
+      print('Dart: Called unmuteSounds native method.');
     } catch (e) {
-      print('Could not unmute sounds: $e');
+      print('Dart: Could not unmute sounds: $e');
     }
   }
 
@@ -49,10 +61,13 @@ class SpeechProvider extends ChangeNotifier {
 
   Future<void> _initSpeech() async {
     try {
-      // Mute system sounds first
+      // 1. Set media volume to full FIRST
+      await _setMediaVolumeFull();
+
+      // 2. Then mute system sounds for speech recognition
       await _muteSystemSounds();
 
-      // Then initialize speech recognition
+      // 3. Initialize speech recognition
       _initialized = await _speechToText.initialize(
         onStatus: _handleStatusUpdate,
         onError: _handleSpeechError,
@@ -61,44 +76,56 @@ class SpeechProvider extends ChangeNotifier {
       if (_initialized) {
         await _startSilentListening();
       }
+      print('Dart: Speech initialization completed: $_initialized');
     } catch (e) {
-      print('Speech initialization failed: $e');
+      print('Dart: Speech initialization failed: $e');
       // Ensure sounds are unmuted if initialization fails
       await _unmuteSystemSounds();
     }
   }
 
   Future<void> _startSilentListening() async {
+    // REMOVED: if (_speechToText.isListening) check.
+    // This allows the method to always attempt to start listening
+    // when called in a context where continuous listening is desired.
+
     try {
-      // Start listening in background without UI feedback
       await _speechToText.listen(
         onResult: (result) {
           if (result.finalResult) {
             _processVoiceCommand(result.recognizedWords.toLowerCase());
           }
         },
-        listenFor: Duration(minutes: 30), // Very long duration
+        listenFor: Duration(minutes: 30),
         pauseFor: Duration(minutes: 20),
         cancelOnError: true,
         partialResults: false,
         listenMode: ListenMode.confirmation,
-        onSoundLevelChange: null, // Disable sound level callbacks
+        onSoundLevelChange: null,
       );
-      _continuousListening = true;
+      _continuousListening =
+          true; // Ensure this is set when silent listening starts
+      _isListening = true; // Update internal state
+      print('VOICE DEBUG: Started silent listening.');
     } catch (e) {
       print('Background listening failed: $e');
+      _continuousListening = false;
+      _isListening = false; // Update internal state on failure
+    } finally {
+      notifyListeners(); // Notify listeners of state change
     }
   }
 
   void _handleStatusUpdate(String status) {
-    // Only update UI listening state if we're in voice mode
     if (_isVoiceMode) {
       _isListening = status == 'listening';
       notifyListeners();
     }
 
-    // Automatically restart if stopped unexpectedly
     if (status == 'notListening' && _continuousListening) {
+      print(
+        'VOICE DEBUG: Speech recognition stopped unexpectedly. Restarting silent listening.',
+      );
       _scheduleRestartListening();
     }
   }
@@ -108,36 +135,65 @@ class SpeechProvider extends ChangeNotifier {
     if (_isVoiceMode) {
       _isListening = false;
       notifyListeners();
-      // Ensure sounds are properly managed on error
+      // On error, ensure sounds are properly managed. Mute then unmute might reset
+      // or simply rely on the unmuting when voice mode is off or disposing.
+      // For persistent mute, keeping these, but be aware of the impact.
       _unmuteSystemSounds();
       _muteSystemSounds();
     }
-    _scheduleRestartListening();
+    if (_continuousListening) {
+      _scheduleRestartListening();
+    }
   }
 
   Future<void> toggleVoiceMode() async {
     if (!_initialized) await _initSpeech();
-    if (!_initialized) return;
+    if (!_initialized) {
+      print(
+        'VOICE DEBUG: Speech initialization failed, cannot toggle voice mode.',
+      );
+      return;
+    }
+
+    // Always stop listening first to ensure a clean state before toggling mode
+    if (_speechToText.isListening) {
+      _speechToText.stop();
+      _isListening = false; // Update internal state immediately
+      notifyListeners();
+      print('VOICE DEBUG: Stopping existing listening before toggling mode.');
+    }
 
     _isVoiceMode = !_isVoiceMode;
+    print('VOICE DEBUG: Voice mode toggled to $_isVoiceMode.');
 
     if (_isVoiceMode) {
-      await _muteSystemSounds();
+      await _muteSystemSounds(); // Mute system sounds for voice recognition
+      _continuousListening =
+          true; // Ensure continuous listening is active for voice mode
+      await _startSilentListening(); // Explicitly restart listening
       _isListening = _speechToText.isListening;
     } else {
-      await _unmuteSystemSounds();
-      _isListening = false;
+      await _unmuteSystemSounds(); // Unmute system sounds when switching to manual
+      stopListening(); // Stop any active listening (this will also set _continuousListening to false)
     }
 
     notifyListeners();
   }
 
   void _scheduleRestartListening() {
-    if (!_continuousListening) return;
+    if (!_continuousListening) {
+      print(
+        'VOICE DEBUG: Not in continuous listening mode, not scheduling restart.',
+      );
+      return;
+    }
 
     _restartListeningTimer?.cancel();
     _restartListeningTimer = Timer(const Duration(milliseconds: 300), () {
       if (!_speechToText.isListening && _continuousListening) {
+        print(
+          'VOICE DEBUG: Attempting to restart silent listening from timer.',
+        );
         _startSilentListening();
       }
     });
@@ -146,7 +202,7 @@ class SpeechProvider extends ChangeNotifier {
   void _processVoiceCommand(String text) {
     _voiceDebounce?.cancel();
     _voiceDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!_isVoiceMode) return; // Ignore commands when not in voice mode
+      if (!_isVoiceMode) return;
 
       final cleanedText = text.trim();
       if (cleanedText.isEmpty || !RegExp(r'[a-zA-Z]').hasMatch(cleanedText)) {
@@ -159,6 +215,8 @@ class SpeechProvider extends ChangeNotifier {
     });
   }
 
+  // In SpeechProvider class
+  // In SpeechProvider
   bool _handleCommand(String text) {
     final isGood = RegExp(r'\b(good|yes|correct|nice)\b').hasMatch(text);
     final isMissed = RegExp(
@@ -166,11 +224,22 @@ class SpeechProvider extends ChangeNotifier {
     ).hasMatch(text);
     final number = _extractNumber(text);
 
+    if (_practiceProvider?.selectedNumber == null) {
+      _practiceProvider?.showErrorMessage("Please tap any spot first");
+      return false;
+    }
+
     if (isGood) {
-      _practiceProvider!.incrementCounter('good', specificNumber: number);
+      _practiceProvider!.incrementCounter(
+        'good',
+        specificNumber: number ?? _practiceProvider!.selectedNumber,
+      );
       return true;
     } else if (isMissed) {
-      _practiceProvider!.incrementCounter('missed', specificNumber: number);
+      _practiceProvider!.incrementCounter(
+        'missed',
+        specificNumber: number ?? _practiceProvider!.selectedNumber,
+      );
       return true;
     }
     return false;
@@ -188,7 +257,6 @@ class SpeechProvider extends ChangeNotifier {
         onResult: (result) {
           if (result.finalResult) {
             _processVoiceCommand(result.recognizedWords.toLowerCase());
-            _scheduleRestartListening();
           }
         },
         listenFor: const Duration(seconds: 30),
@@ -196,11 +264,11 @@ class SpeechProvider extends ChangeNotifier {
         partialResults: false,
         listenMode: ListenMode.dictation,
       );
+      print('VOICE DEBUG: Started active dictation listening.');
     } catch (e) {
       print('Listening start failed: $e');
       _isListening = false;
       notifyListeners();
-      _scheduleRestartListening();
     }
   }
 
@@ -210,8 +278,9 @@ class SpeechProvider extends ChangeNotifier {
 
     if (_speechToText.isListening) {
       _speechToText.stop();
+      print('VOICE DEBUG: Speech recognition stopped.');
     }
-
+    _continuousListening = false;
     _isListening = false;
     notifyListeners();
   }
@@ -245,7 +314,6 @@ class SpeechProvider extends ChangeNotifier {
       'sixteen': 16,
     };
 
-    // Create a safe regex pattern
     final pattern = '\\b(\\d+|${numberWords.keys.join('|')})\\b';
     final match = RegExp(pattern, caseSensitive: false).firstMatch(text);
 
@@ -261,7 +329,7 @@ class SpeechProvider extends ChangeNotifier {
     _voiceDebounce?.cancel();
     _restartListeningTimer?.cancel();
     _speechToText.cancel();
-    _unmuteSystemSounds(); // Restore sounds when provider is disposed
+    _unmuteSystemSounds(); // Ensure sounds are restored on dispose
     super.dispose();
   }
 }
